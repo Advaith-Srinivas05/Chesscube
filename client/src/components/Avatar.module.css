@@ -1,0 +1,28 @@
+.avatar {
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  user-select: none;
+}
+
+.avatar img {
+  width: 80%;
+  height: 80%;
+  object-fit: contain;
+}
+
+.deleted {
+  background: var(--surface-2);
+  color: var(--text-muted);
+}
+
+.deleted svg {
+  width: 62%;
+  height: 62%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}

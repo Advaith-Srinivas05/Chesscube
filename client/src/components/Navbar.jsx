@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext.jsx';
 import { useSettings } from '../context/SettingsContext.jsx';
 import Logo from './Logo.jsx';
+import ProfileMenu from './ProfileMenu.jsx';
 import styles from './Navbar.module.css';
 
 const LINKS = [
@@ -44,6 +46,7 @@ function GearIcon() {
 
 export default function Navbar() {
   const { resolvedTheme, updateSettings } = useSettings();
+  const { user, status } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
 
@@ -82,9 +85,15 @@ export default function Navbar() {
           >
             <GearIcon />
           </NavLink>
-          <Link to="/signin" className={styles.signIn}>
-            Sign in
-          </Link>
+          {status === 'loading' ? (
+            <span className={styles.accountPlaceholder} aria-hidden="true" />
+          ) : user ? (
+            <ProfileMenu />
+          ) : (
+            <Link to="/signin" className={styles.signIn}>
+              Sign in
+            </Link>
+          )}
           <button
             type="button"
             className={`${styles.iconButton} ${styles.menuToggle}`}

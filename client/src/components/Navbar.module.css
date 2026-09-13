@@ -115,6 +115,11 @@
   background: var(--accent-hover);
 }
 
+.accountPlaceholder {
+  width: 38px;
+  height: 38px;
+}
+
 .menuToggle {
   display: none;
 }

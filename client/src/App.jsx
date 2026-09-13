@@ -1,14 +1,22 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
+import GuestOnly from './components/GuestOnly.jsx';
 import Layout from './components/Layout.jsx';
+import ChooseUsername from './pages/ChooseUsername.jsx';
+import ForgotPassword from './pages/ForgotPassword.jsx';
 import Home from './pages/Home.jsx';
 import Leaderboard from './pages/Leaderboard.jsx';
 import Learn from './pages/Learn.jsx';
 import Play from './pages/Play.jsx';
 import Profile from './pages/Profile.jsx';
 import Puzzles from './pages/Puzzles.jsx';
+import ResetPassword from './pages/ResetPassword.jsx';
 import Settings from './pages/Settings.jsx';
 import SignIn from './pages/SignIn.jsx';
+import SignUp from './pages/SignUp.jsx';
 import Socials from './pages/Socials.jsx';
+import VerifyEmail from './pages/VerifyEmail.jsx';
+
+const guest = (page) => <GuestOnly>{page}</GuestOnly>;
 
 export default function App() {
   return (
@@ -20,7 +28,12 @@ export default function App() {
         <Route path="learn" element={<Learn />} />
         <Route path="leaderboard" element={<Leaderboard />} />
         <Route path="socials" element={<Socials />} />
-        <Route path="signin" element={<SignIn />} />
+        <Route path="signin" element={guest(<SignIn />)} />
+        <Route path="signup" element={guest(<SignUp />)} />
+        <Route path="signup/username" element={guest(<ChooseUsername />)} />
+        <Route path="verify-email" element={guest(<VerifyEmail />)} />
+        <Route path="forgot-password" element={guest(<ForgotPassword />)} />
+        <Route path="reset-password" element={guest(<ResetPassword />)} />
         <Route path="profile" element={<Profile />} />
         <Route path="settings" element={<Settings />} />
         <Route path="*" element={<Navigate to="/" replace />} />

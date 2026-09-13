@@ -7,8 +7,9 @@ function required(name) {
 const nodeEnv = process.env.NODE_ENV ?? 'development';
 const isProd = nodeEnv === 'production';
 
-const smtpUser = process.env.SMTP_USER || null;
-const smtpPass = process.env.SMTP_PASS || null;
+const smtpUser = process.env.SMTP_USER?.trim() || null;
+// Google shows app passwords in groups of four; the spaces aren't part of it.
+const smtpPass = process.env.SMTP_PASS?.replace(/\s+/g, '') || null;
 
 // Without SMTP credentials emails are logged to the console, which is only acceptable in development.
 if (isProd && (!smtpUser || !smtpPass)) {

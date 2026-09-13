@@ -2,7 +2,9 @@ import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import express from 'express';
 import { env } from './config/env.js';
+import { optionalAuth } from './middleware/auth.js';
 import { errorHandler, notFound } from './middleware/errors.js';
+import { authRouter } from './routes/auth.js';
 
 const BODY_METHODS = new Set(['POST', 'PATCH', 'PUT', 'DELETE']);
 
@@ -20,14 +22,19 @@ function requireJson(req, res, next) {
 export function createApp() {
   const app = express();
 
-  app.use(cors({ origin: env.clientOrigins }));
+  // In production requests arrive through Vercel's rewrite and Koyeb's edge, so req.ip comes from
+  // X-Forwarded-For. Someone calling the API host directly could spoof it; acceptable for rate limiting here.
+  if (env.isProd) app.set('trust proxy', true);
+
+  app.use(cors({ origin: env.clientOrigins, credentials: true }));
   app.use(cookieParser());
   app.use(requireJson);
   app.use(express.json({ limit: '20kb' }));
 
   app.get('/api/health', (req, res) => res.json({ ok: true }));
 
-  // Feature routers are mounted here as /api/<name>, before notFound.
+  app.use('/api', optionalAuth);
+  app.use('/api/auth', authRouter);
 
   app.use(notFound);
   app.use(errorHandler);
