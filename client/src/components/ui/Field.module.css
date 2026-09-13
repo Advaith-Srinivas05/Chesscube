@@ -1,0 +1,100 @@
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.label {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.control {
+  position: relative;
+  display: flex;
+}
+
+.control > :is(input, textarea, select) {
+  width: 100%;
+  min-width: 0;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.control > textarea {
+  min-height: 96px;
+  resize: vertical;
+}
+
+.control > select {
+  appearance: none;
+  padding-right: 38px;
+  background-image: linear-gradient(45deg, transparent 50%, var(--text-muted) 50%),
+    linear-gradient(135deg, var(--text-muted) 50%, transparent 50%);
+  background-position: calc(100% - 19px) 50%, calc(100% - 14px) 50%;
+  background-size: 5px 5px;
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+
+.control > :is(input, textarea, select)::placeholder {
+  color: var(--text-muted);
+  opacity: 0.8;
+}
+
+.control > :is(input, textarea, select):hover {
+  border-color: color-mix(in srgb, var(--border) 50%, var(--text-muted));
+}
+
+.control > :is(input, textarea, select):focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.control > :is(input, textarea, select):disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.withAdornment > :is(input, select) {
+  padding-right: 48px;
+}
+
+.adornment {
+  position: absolute;
+  top: 0;
+  right: 6px;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  color: var(--text-muted);
+}
+
+.invalid .control > :is(input, textarea, select) {
+  border-color: var(--danger);
+}
+
+.invalid .control > :is(input, textarea, select):focus-visible {
+  box-shadow: 0 0 0 3px var(--danger-soft);
+}
+
+.hint,
+.error {
+  margin: 0;
+  font-size: 13px;
+}
+
+.hint {
+  color: var(--text-muted);
+}
+
+.error {
+  color: var(--danger);
+  font-weight: 600;
+}

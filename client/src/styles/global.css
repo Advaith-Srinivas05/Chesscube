@@ -11,6 +11,11 @@
   --accent-hover: #3c2206;
   --accent-soft: rgba(90, 55, 18, 0.1);
   --on-accent: #fffced;
+  --danger: #a8322d;
+  --danger-soft: rgba(168, 50, 45, 0.1);
+  --success: #3f7d3a;
+  --success-soft: rgba(63, 125, 58, 0.12);
+  --warning: #8a5a0b;
   --shadow: 0 10px 30px rgba(60, 34, 6, 0.08), 0 2px 6px rgba(60, 34, 6, 0.06);
 
   --font-body: 'Manrope', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
@@ -35,6 +40,11 @@
   --accent-hover: #f4e6c4;
   --accent-soft: rgba(230, 210, 166, 0.12);
   --on-accent: #3c2206;
+  --danger: #e0786f;
+  --danger-soft: rgba(224, 120, 111, 0.14);
+  --success: #8cc084;
+  --success-soft: rgba(140, 192, 132, 0.14);
+  --warning: #e3b25a;
   --shadow: 0 10px 30px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.3);
 
   color-scheme: dark;
@@ -79,6 +89,18 @@ img {
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .page {

@@ -1,0 +1,111 @@
+.region {
+  position: fixed;
+  inset: auto 20px 20px auto;
+  color: var(--text);
+  text-align: left;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+  width: min(380px, calc(100vw - 32px));
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 8px 10px 16px;
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  pointer-events: auto;
+  animation: slide 0.2s ease-out;
+}
+
+.info {
+  border-left-color: var(--accent);
+}
+
+.success {
+  border-left-color: var(--success);
+}
+
+.danger {
+  border-left-color: var(--danger);
+}
+
+.message {
+  flex: 1;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.action {
+  flex-shrink: 0;
+  padding: 6px 10px;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: var(--accent);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.action:hover {
+  background: var(--accent-soft);
+}
+
+.dismiss {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.dismiss:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.dismiss svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+@keyframes slide {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+@media (max-width: 639px) {
+  .region {
+    inset: auto 50% calc(16px + env(safe-area-inset-bottom)) auto;
+    align-items: stretch;
+    transform: translateX(50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    animation: none;
+  }
+}
