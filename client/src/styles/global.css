@@ -1,15 +1,17 @@
+/* Palette taken from the logo: rook brown #3c2206 on parchment #fffced. */
 :root {
-  --bg: #f5f3ee;
-  --surface: #ffffff;
-  --surface-2: #efece5;
-  --border: #e2ddd2;
-  --text: #1b1c20;
-  --text-muted: #6b6a66;
-  --accent: #b4651e;
-  --accent-hover: #9c5617;
-  --accent-soft: rgba(180, 101, 30, 0.12);
-  --on-accent: #ffffff;
-  --shadow: 0 10px 30px rgba(27, 28, 32, 0.08), 0 2px 6px rgba(27, 28, 32, 0.06);
+  --bg: #fbf6e8;
+  --surface: #fffdf5;
+  --surface-2: #f3ecd8;
+  --border: #e6dbc1;
+  --text: #2b1a07;
+  --text-muted: #7a654d;
+  --logo: #3c2206;
+  --accent: #5a3712;
+  --accent-hover: #3c2206;
+  --accent-soft: rgba(90, 55, 18, 0.1);
+  --on-accent: #fffced;
+  --shadow: 0 10px 30px rgba(60, 34, 6, 0.08), 0 2px 6px rgba(60, 34, 6, 0.06);
 
   --font-body: 'Manrope', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
@@ -22,16 +24,17 @@
 }
 
 :root[data-theme='dark'] {
-  --bg: #121316;
-  --surface: #1a1c20;
-  --surface-2: #22252a;
-  --border: #2c2f36;
-  --text: #ecebe7;
-  --text-muted: #9a9993;
-  --accent: #e59a4a;
-  --accent-hover: #f0ac62;
-  --accent-soft: rgba(229, 154, 74, 0.14);
-  --on-accent: #1a1208;
+  --bg: #15100a;
+  --surface: #1e1710;
+  --surface-2: #2a2117;
+  --border: #3a2e21;
+  --text: #fffced;
+  --text-muted: #b4a58e;
+  --logo: #fffced;
+  --accent: #e6d2a6;
+  --accent-hover: #f4e6c4;
+  --accent-soft: rgba(230, 210, 166, 0.12);
+  --on-accent: #3c2206;
   --shadow: 0 10px 30px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.3);
 
   color-scheme: dark;

@@ -1,5 +1,5 @@
 {
-  "name": "chess-client",
+  "name": "chesscube-client",
   "version": "1.0.0",
   "private": true,
   "type": "module",
@@ -9,10 +9,12 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "chess.js": "^1.4.0",
     "react": "^19.3.0",
     "react-chessboard": "^5.12.1",
     "react-dom": "^19.3.0",
-    "react-router-dom": "^7.18.3"
+    "react-router-dom": "^7.18.3",
+    "stockfish": "^18.0.8"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^6.1.1",

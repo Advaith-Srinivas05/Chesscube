@@ -85,6 +85,12 @@
   background: var(--surface-2);
 }
 
+.iconActive,
+.iconActive:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 .iconButton svg {
   width: 18px;
   height: 18px;
@@ -107,34 +113,6 @@
 
 .signIn:hover {
   background: var(--accent-hover);
-}
-
-.account {
-  position: relative;
-}
-
-.dropdown {
-  position: absolute;
-  top: calc(100% + 10px);
-  right: 0;
-  min-width: 180px;
-  padding: 6px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--surface);
-  box-shadow: var(--shadow);
-}
-
-.dropdownItem {
-  display: block;
-  padding: 9px 12px;
-  border-radius: 7px;
-  font-weight: 600;
-}
-
-.dropdownItem:hover {
-  background: var(--accent-soft);
-  color: var(--accent);
 }
 
 .menuToggle {
