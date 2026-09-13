@@ -1,0 +1,13 @@
+.board {
+  width: 100%;
+  border-radius: 6px;
+  box-shadow: var(--shadow);
+}
+
+/* The draggable wrapper has no height of its own, so size the piece explicitly. */
+.piece {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  user-select: none;
+}
