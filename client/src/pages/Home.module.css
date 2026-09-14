@@ -25,6 +25,13 @@
   border: 1px solid var(--border);
   border-radius: 14px;
   background: var(--surface);
+  transition: scale 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Cards grow on hover, as the old project's cards did (0.3s ease, scale 1.03). */
+.card:hover {
+  scale: 1.03;
+  box-shadow: var(--shadow);
 }
 
 .wide {

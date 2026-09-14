@@ -1,9 +1,12 @@
 import { Link } from 'react-router-dom';
+import AboutCard from '../components/home/AboutCard.jsx';
+import PuzzlesCard from '../components/home/PuzzlesCard.jsx';
+import StartGameCard from '../components/home/StartGameCard.jsx';
 import RandomGame from '../components/RandomGame.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import styles from './Home.module.css';
 
-// Card contents other than the welcome card get filled in as their pages are built.
+// The match history card stays empty until games are stored.
 export default function Home() {
   const { user, status } = useAuth();
 
@@ -35,9 +38,15 @@ export default function Home() {
             </>
           )}
         </section>
-        <section className={styles.card} aria-label="Start a game" />
-        <section className={styles.card} aria-label="Puzzles" />
-        <section className={styles.card} aria-label="About" />
+        <section className={styles.card} aria-label="Start a game">
+          <StartGameCard />
+        </section>
+        <section className={styles.card} aria-label="Puzzles">
+          <PuzzlesCard />
+        </section>
+        <section className={styles.card} aria-label="About">
+          <AboutCard />
+        </section>
         <section className={`${styles.card} ${styles.wide}`} aria-label="Match history" />
       </div>
     </div>

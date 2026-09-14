@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import { PROVISIONAL_RD } from '../lib/glicko2.js';
 import { effectiveStreak } from '../services/dailyPuzzle.js';
 import { randomAvatarId } from '../shared/avatars.js';
+import { CATEGORIES } from '../shared/gameModes.js';
 
 // Glicko-2 state per category, with short keys because every user document carries six of them:
 // r = rating, rd = rating deviation, vol = volatility, n = rated games (or puzzles) played.
@@ -61,6 +62,11 @@ const userSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+// Leaderboard sorting, one index per game category.
+for (const { id } of CATEGORIES) {
+  userSchema.index({ [`ratings.${id}.r`]: -1 });
+}
 
 userSchema.pre('validate', function setUsernameLower() {
   if (this.username) this.usernameLower = this.username.toLowerCase();

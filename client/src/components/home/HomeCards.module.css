@@ -1,0 +1,286 @@
+.title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.text {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.muted {
+  color: var(--text-muted);
+}
+
+.bottom {
+  align-self: flex-start;
+  margin-top: auto;
+}
+
+/* ---- Start a game ---- */
+
+.links {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.linkRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg);
+  color: var(--text);
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.linkRow:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.linkIcon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.linkIcon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.linkText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  font-size: 15px;
+  line-height: 1.3;
+}
+
+.linkHint {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.arrow {
+  width: 18px;
+  height: 18px;
+  margin-left: auto;
+  flex-shrink: 0;
+  color: var(--text-muted);
+  transition: transform 0.15s ease;
+}
+
+.linkRow:hover .arrow {
+  transform: translateX(3px);
+}
+
+/* ---- Puzzles ---- */
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.chip svg {
+  color: var(--accent);
+}
+
+.daily {
+  display: grid;
+  grid-template-columns: 84px minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+}
+
+.miniBoard {
+  width: 84px;
+  pointer-events: none;
+}
+
+.miniBoardBlank {
+  display: block;
+  aspect-ratio: 1;
+  border-radius: 4px;
+  background: var(--surface-2);
+}
+
+.dailyInfo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.dailyLabel {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.streak {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+}
+
+.streak svg {
+  color: var(--accent);
+}
+
+.textLink {
+  align-self: flex-start;
+  margin-top: auto;
+  color: var(--accent);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.textLink:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ---- About ---- */
+
+.checkOut {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.socials {
+  display: flex;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Each icon has its own theme colour: the circle fills with it and a label pops up above.
+   Timing, easing and travel follow the old project's social buttons (its 0.7 scale applied to the distances). */
+.github {
+  --social: var(--text);
+  --on-social: var(--bg);
+}
+
+.linkedin {
+  --social: var(--accent);
+  --on-social: var(--on-accent);
+}
+
+.portfolio {
+  --social: var(--warning);
+  --on-social: var(--bg);
+}
+
+.social {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--bg);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.social[aria-disabled='true'] {
+  cursor: default;
+}
+
+.social svg {
+  width: 22px;
+  height: 22px;
+}
+
+.social::before,
+.social::after {
+  position: absolute;
+  left: 50%;
+  opacity: 0;
+  pointer-events: none;
+  transition: 200ms cubic-bezier(0.42, 0, 0.44, 1.68);
+}
+
+.social::before {
+  content: attr(data-label);
+  bottom: 100%;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--social);
+  color: var(--on-social);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  transform: translate(-50%, 12px) rotate(25deg);
+}
+
+.social::after {
+  content: '';
+  bottom: 100%;
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 7px solid var(--social);
+  transform: translate(-50%, 23px) rotate(25deg);
+}
+
+.social:hover,
+.social:focus-visible {
+  border-color: var(--social);
+  background: var(--social);
+  color: var(--on-social);
+}
+
+.social:hover::before,
+.social:focus-visible::before {
+  opacity: 1;
+  transform: translate(-50%, -12px) rotate(0);
+}
+
+.social:hover::after,
+.social:focus-visible::after {
+  opacity: 1;
+  transform: translate(-50%, -6px) rotate(0);
+}

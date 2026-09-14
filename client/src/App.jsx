@@ -31,7 +31,7 @@ export default function App() {
         <Route path="puzzles" element={<Puzzles />} />
         <Route path="puzzles/daily" element={<RequireAuth><DailyPuzzle /></RequireAuth>} />
         <Route path="learn" element={<Learn />} />
-        <Route path="leaderboard" element={<Leaderboard />} />
+        <Route path="leaderboard/:category?" element={<Leaderboard />} />
         <Route path="socials" element={<Socials />} />
         <Route path="signin" element={guest(<SignIn />)} />
         <Route path="signup" element={guest(<SignUp />)} />
