@@ -25,11 +25,25 @@
 }
 
 .slot {
+  display: grid;
+  place-items: center;
   width: 38px;
   height: 38px;
-  border: 1.5px dashed var(--border);
+  border: 1.5px dashed color-mix(in srgb, var(--text-muted) 55%, transparent);
   border-radius: 50%;
-  background: var(--surface);
+  background: var(--surface-2);
+  /* A ring in the card colour keeps overlapping circles distinct. */
+  box-shadow: 0 0 0 2px var(--surface);
+  color: color-mix(in srgb, var(--text-muted) 60%, transparent);
+}
+
+.slot svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
 }
 
 .slot + .slot {

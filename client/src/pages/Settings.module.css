@@ -151,3 +151,97 @@
     grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
   }
 }
+
+.switches {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.soundThemes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.soundTheme {
+  display: flex;
+  align-items: stretch;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.soundTheme:hover {
+  border-color: var(--text-muted);
+}
+
+.soundTheme.selected {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.soundChoice {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 12px 4px 12px 14px;
+  border: none;
+  border-radius: var(--radius) 0 0 var(--radius);
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.soundDescription {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.playButton {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  align-self: center;
+  width: 36px;
+  height: 36px;
+  margin-right: 10px;
+  border: none;
+  border-radius: 50%;
+  background: var(--surface-2);
+  color: var(--text);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.playButton:hover:not(:disabled) {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.playButton svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}
+
+.muted {
+  opacity: 0.55;
+}
+
+.muted :is(.soundChoice, .playButton) {
+  cursor: not-allowed;
+}
+
+.hint {
+  margin: 10px 0 0;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.soundField {
+  margin-top: 24px;
+}

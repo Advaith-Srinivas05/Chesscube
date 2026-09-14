@@ -13,7 +13,12 @@ export default function FriendsPreview({ username, isOwn = false }) {
       <div className={styles.body}>
         <div className={styles.slots} aria-hidden="true">
           {Array.from({ length: SLOTS }, (_, index) => (
-            <span key={index} className={styles.slot} />
+            <span key={index} className={styles.slot}>
+              <svg viewBox="0 0 24 24">
+                <circle cx="12" cy="9" r="3.5" />
+                <path d="M5.5 19.5a6.5 6.5 0 0 1 13 0" />
+              </svg>
+            </span>
           ))}
         </div>
         <p className={styles.text}>

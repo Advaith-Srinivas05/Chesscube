@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { BOARD_THEMES, PIECE_SETS } from '../data/boardOptions.js';
+import { DEFAULT_SOUND_THEME } from '../lib/sounds.js';
 
 const STORAGE_KEY = 'settings';
 
@@ -7,6 +8,11 @@ const DEFAULTS = {
   theme: 'system', // 'system' | 'light' | 'dark'
   pieceSet: PIECE_SETS[0].id,
   boardTheme: BOARD_THEMES[0].id,
+  showLegalMoves: true,
+  premoves: true,
+  autoQueen: false,
+  sounds: true,
+  soundTheme: DEFAULT_SOUND_THEME,
 };
 
 function loadSettings() {

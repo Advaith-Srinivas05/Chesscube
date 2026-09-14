@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Chess } from 'chess.js';
-import engineUrl from 'stockfish/bin/stockfish-18-lite-single.js?url';
-import wasmUrl from 'stockfish/bin/stockfish-18-lite-single.wasm?url';
+import { createEngine } from '../lib/engine.js';
 import ChessBoard from './ChessBoard.jsx';
 
 const MOVE_DELAY = 1000;
@@ -14,50 +13,40 @@ function randomDepth() {
   return MIN_DEPTH + Math.floor(Math.random() * (MAX_DEPTH - MIN_DEPTH + 1));
 }
 
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 // Stockfish plays itself on a loop, searching each move to a random depth so no two games are alike.
 export default function RandomGame() {
   const [position, setPosition] = useState(() => new Chess().fen());
 
   useEffect(() => {
     const game = new Chess();
-    // The engine reads the wasm location from the hash, since bundling renames both files.
-    const engine = new Worker(`${engineUrl}#${encodeURIComponent(wasmUrl)}`);
-    let timer;
+    const engine = createEngine();
+    let active = true;
 
-    const think = () => {
-      engine.postMessage(`position fen ${game.fen()}`);
-      engine.postMessage(`go depth ${randomDepth()}`);
-    };
-
-    const restart = () => {
-      game.reset();
-      engine.postMessage('ucinewgame');
-      setPosition(game.fen());
-      timer = setTimeout(think, MOVE_DELAY);
-    };
-
-    engine.onmessage = ({ data }) => {
-      if (typeof data !== 'string' || !data.startsWith('bestmove')) return;
-
-      const bestMove = data.match(/^bestmove\s+([a-h][1-8][a-h][1-8][qrbn]?)/)?.[1];
-      if (bestMove) {
-        game.move({ from: bestMove.slice(0, 2), to: bestMove.slice(2, 4), promotion: bestMove[4] });
+    async function loop() {
+      while (active) {
+        game.reset();
         setPosition(game.fen());
-      }
+        await engine.newGame();
+        await wait(MOVE_DELAY);
 
-      if (game.isGameOver() || game.history().length >= MAX_PLIES) {
-        timer = setTimeout(restart, RESTART_DELAY);
-      } else {
-        timer = setTimeout(think, MOVE_DELAY);
-      }
-    };
+        while (active && !game.isGameOver() && game.history().length < MAX_PLIES) {
+          const move = await engine.bestMove({ fen: game.fen(), depth: randomDepth() });
+          if (!active || !move) break;
+          game.move({ from: move.slice(0, 2), to: move.slice(2, 4), promotion: move[4] });
+          setPosition(game.fen());
+          await wait(MOVE_DELAY);
+        }
 
-    engine.postMessage('uci');
-    engine.postMessage('isready');
-    timer = setTimeout(think, MOVE_DELAY);
+        await wait(RESTART_DELAY - MOVE_DELAY);
+      }
+    }
+
+    loop().catch(() => {});
 
     return () => {
-      clearTimeout(timer);
+      active = false;
       engine.terminate();
     };
   }, []);

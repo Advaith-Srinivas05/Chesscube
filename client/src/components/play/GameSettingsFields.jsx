@@ -31,9 +31,14 @@ function minutesLabel(minutes) {
   return whole === 0 ? '½' : `${whole}½`;
 }
 
-function Segmented({ label, options, value, onChange, disabled = false, describedBy }) {
+export function Segmented({ label, options, value, onChange, disabled = false, describedBy, compact = false }) {
   return (
-    <div className={styles.segmented} role="radiogroup" aria-label={label} aria-describedby={describedBy}>
+    <div
+      className={`${styles.segmented} ${compact ? styles.compact : ''}`}
+      role="radiogroup"
+      aria-label={label}
+      aria-describedby={describedBy}
+    >
       {options.map(({ id, name }) => (
         <button
           key={String(id)}

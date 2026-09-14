@@ -209,3 +209,8 @@
     transition: none;
   }
 }
+
+.compact .segment {
+  min-width: 34px;
+  padding: 7px 10px;
+}

@@ -1,0 +1,72 @@
+.view {
+  display: grid;
+  /* The board shrinks on short screens so both player bars stay in view. */
+  grid-template-columns: minmax(0, min(640px, calc(100dvh - 230px))) minmax(260px, 320px);
+  justify-content: center;
+  gap: 24px;
+  align-items: start;
+}
+
+.view:focus {
+  outline: none;
+}
+
+.boardColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.boardWrap {
+  position: relative;
+}
+
+.backToGame {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  z-index: 15;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px 6px 16px;
+  border: none;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--on-accent);
+  box-shadow: var(--shadow);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transform: translateX(-50%);
+}
+
+.backToGame svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  padding-top: 58px;
+}
+
+@media (max-width: 1023px) {
+  .view {
+    grid-template-columns: minmax(0, 640px);
+    gap: 14px;
+  }
+
+  .panel {
+    padding-top: 0;
+  }
+}

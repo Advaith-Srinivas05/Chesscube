@@ -1,0 +1,74 @@
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 6px 4px 6px 10px;
+  border-left: 3px solid transparent;
+  border-radius: 4px;
+  transition: border-color 0.15s ease;
+}
+
+.active {
+  border-left-color: var(--accent);
+}
+
+.avatar {
+  display: flex;
+  flex-shrink: 0;
+}
+
+.info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.nameRow {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.name {
+  overflow: hidden;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+.rating {
+  flex-shrink: 0;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.gain,
+.loss {
+  flex-shrink: 0;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.gain {
+  color: var(--success);
+}
+
+.loss {
+  color: var(--danger);
+}
+
+.material {
+  min-height: 18px;
+}
+
+.clock {
+  flex-shrink: 0;
+  margin-left: auto;
+}

@@ -8,6 +8,7 @@ import Home from './pages/Home.jsx';
 import Leaderboard from './pages/Leaderboard.jsx';
 import Learn from './pages/Learn.jsx';
 import Play from './pages/Play.jsx';
+import PlayComputer from './pages/PlayComputer.jsx';
 import Profile from './pages/Profile.jsx';
 import Puzzles from './pages/Puzzles.jsx';
 import ResetPassword from './pages/ResetPassword.jsx';
@@ -25,6 +26,7 @@ export default function App() {
       <Route element={<Layout />}>
         <Route index element={<Home />} />
         <Route path="play" element={<Play />} />
+        <Route path="play/computer" element={<PlayComputer />} />
         <Route path="puzzles" element={<Puzzles />} />
         <Route path="learn" element={<Learn />} />
         <Route path="leaderboard" element={<Leaderboard />} />

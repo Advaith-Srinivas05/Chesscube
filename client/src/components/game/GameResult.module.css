@@ -1,0 +1,71 @@
+.result {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--accent-soft), transparent 70%), var(--surface);
+  text-align: center;
+  animation: appear 0.2s ease-out;
+}
+
+.score {
+  font-family: var(--font-display);
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.headline {
+  margin: 0;
+  font-weight: 700;
+}
+
+.reason {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.ratings {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 16px;
+  margin: 0;
+  padding: 0;
+  font-size: 14px;
+  list-style: none;
+}
+
+.gain {
+  color: var(--success);
+  font-weight: 700;
+}
+
+.loss {
+  color: var(--danger);
+  font-weight: 700;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+@keyframes appear {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .result {
+    animation: none;
+  }
+}

@@ -1,0 +1,40 @@
+.diff {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.pieces {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.pieces img {
+  width: 18px;
+  height: 18px;
+  opacity: 0.85;
+}
+
+/* Black pieces vanish on the dark background, so sit the icons on a small parchment pill (like a light square). */
+:global([data-theme='dark']) .pieces {
+  padding: 1px 4px;
+  border-radius: 6px;
+  background: #e6d2a6;
+}
+
+:global([data-theme='dark']) .pieces img {
+  opacity: 1;
+}
+
+.stacked {
+  margin-left: -9px;
+}
+
+.score {
+  white-space: nowrap;
+}
