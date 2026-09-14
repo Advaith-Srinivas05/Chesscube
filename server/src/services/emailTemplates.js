@@ -61,6 +61,27 @@ export function verificationEmail({ username, code }) {
   };
 }
 
+export function emailChangeEmail({ username, code }) {
+  const name = escapeHtml(username);
+  return {
+    subject: `${code} is your Chesscube email change code`,
+    text: [
+      `Hi ${username},`,
+      '',
+      `Your code to use this address for your Chesscube account is ${code}.`,
+      `It expires in ${CODE_EXPIRY_MINUTES} minutes.`,
+      '',
+      "If you didn't ask for this, you can ignore this email. Nothing will change.",
+    ].join('\n'),
+    html: layout({
+      heading: 'Confirm your new email',
+      intro: `Hi ${name}, enter this code to use this address for your Chesscube account.`,
+      code,
+      footer: "If you didn't ask for this, you can ignore this email. Nothing will change.",
+    }),
+  };
+}
+
 export function passwordResetEmail({ code }) {
   return {
     subject: `${code} is your Chesscube password reset code`,

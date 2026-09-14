@@ -41,6 +41,13 @@ export function AuthProvider({ children }) {
       forgotPassword: (email) => api.post('/auth/forgot-password', { email }),
       resetPassword: ({ email, code, password }) =>
         withUser(api.post('/auth/reset-password', { email, code, password })),
+      updateProfile: (changes) => withUser(api.patch('/users/me', changes)),
+      changePassword: (currentPassword, newPassword) =>
+        withUser(api.post('/users/me/password', { currentPassword, newPassword })),
+      requestEmailChange: (email, password) => api.post('/users/me/email', { email, password }),
+      confirmEmailChange: (code) => withUser(api.post('/users/me/email/verify', { code })),
+      // Doesn't clear `user`: the caller navigates away in the same transition, so guarded pages don't redirect to sign-in.
+      deleteAccount: (confirmation) => api.delete('/users/me', confirmation),
       signOut: async () => {
         try {
           await api.post('/auth/logout');

@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import GuestOnly from './components/GuestOnly.jsx';
 import Layout from './components/Layout.jsx';
+import RequireAuth from './components/RequireAuth.jsx';
 import ChooseUsername from './pages/ChooseUsername.jsx';
 import ForgotPassword from './pages/ForgotPassword.jsx';
 import Home from './pages/Home.jsx';
@@ -34,7 +35,8 @@ export default function App() {
         <Route path="verify-email" element={guest(<VerifyEmail />)} />
         <Route path="forgot-password" element={guest(<ForgotPassword />)} />
         <Route path="reset-password" element={guest(<ResetPassword />)} />
-        <Route path="profile" element={<Profile />} />
+        <Route path="profile" element={<RequireAuth><Profile /></RequireAuth>} />
+        <Route path="u/:username" element={<Profile />} />
         <Route path="settings" element={<Settings />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>

@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { OAuth2Client } from 'google-auth-library';
 import { z } from 'zod';
 import { env } from '../config/env.js';
+import { code, email, password, username } from '../lib/schemas.js';
 import { HttpError } from '../middleware/errors.js';
 import { ipKeyGenerator, limiter } from '../middleware/rateLimit.js';
 import { validate } from '../middleware/validate.js';
@@ -21,53 +22,17 @@ import { passwordResetEmail, verificationEmail } from '../services/emailTemplate
 import { sendMail } from '../services/mailer.js';
 import { hashPassword, verifyPassword } from '../services/passwords.js';
 import { clearSessionCookie, signIn, signPurposeToken, verifyPurposeToken } from '../services/tokens.js';
-import { CODE_RE, PASSWORD_MAX, PASSWORD_RULES, passwordIssues, usernameIssue, USERNAME_RE } from '../shared/validation.js';
+import { usernameTaken } from '../services/usernames.js';
+import { PASSWORD_MAX, usernameIssue, USERNAME_RE } from '../shared/validation.js';
 
 const MINUTE = 60 * 1000;
 const PENDING_TTL_MS = 30 * MINUTE;
 const MAX_SENDS = 5;
 const RESEND_SECONDS = 60;
 
-// ---- Schemas ----
-
-const email = z
-  .string({ error: 'Email is required' })
-  .trim()
-  .toLowerCase()
-  .max(254, 'Email is too long')
-  .pipe(z.email('Enter a valid email address'));
-
-const username = z
-  .string({ error: 'Username is required' })
-  .trim()
-  .superRefine((value, ctx) => {
-    const issue = usernameIssue(value);
-    if (issue) ctx.addIssue({ code: 'custom', message: issue });
-  });
-
-const password = z
-  .string({ error: 'Password is required' })
-  .max(PASSWORD_MAX, `Password must be at most ${PASSWORD_MAX} characters`)
-  .superRefine((value, ctx) => {
-    const failed = passwordIssues(value);
-    if (failed.length === 0) return;
-    const labels = PASSWORD_RULES.filter((rule) => failed.includes(rule.id)).map((rule) => rule.label.toLowerCase());
-    ctx.addIssue({ code: 'custom', message: `Password needs ${labels.join(', ')}` });
-  });
-
-const code = z.string({ error: 'Code is required' }).trim().regex(CODE_RE, 'Enter the 6-digit code');
-
 // ---- Helpers ----
 
 const notExpired = () => ({ expiresAt: { $gt: new Date() } });
-
-// True when a User, or another email's unexpired sign-up, holds the username.
-async function usernameTaken(name, forEmail) {
-  const usernameLower = name.toLowerCase();
-  if (await User.exists({ usernameLower })) return true;
-  const pending = await PendingSignup.findOne({ usernameLower, ...notExpired() }, { email: 1 }).lean();
-  return Boolean(pending && pending.email !== forEmail);
-}
 
 function tooSoon(seconds) {
   return new HttpError(429, `Please wait ${seconds} seconds before requesting another code`, 'COOLDOWN', {
@@ -108,7 +73,9 @@ authRouter.get(
     const { username: name, email: forEmail } = req.validatedQuery;
     const issue = usernameIssue(name.trim());
     if (issue) return res.json({ available: false, message: issue });
-    if (await usernameTaken(name.trim(), forEmail)) {
+    // Signed in (renaming on the profile page): the user's own name, in any casing, counts as available.
+    const options = { email: forEmail ?? req.user?.email, exceptUserId: req.user?._id };
+    if (await usernameTaken(name.trim(), options)) {
       return res.json({ available: false, message: 'That username is taken' });
     }
     res.json({ available: true });
@@ -130,7 +97,7 @@ authRouter.post(
       error.field = 'email';
       throw error;
     }
-    if (await usernameTaken(name, address)) {
+    if (await usernameTaken(name, { email: address })) {
       const error = new HttpError(409, 'That username is taken');
       error.field = 'username';
       throw error;
@@ -326,7 +293,7 @@ async function suggestUsername(name, address) {
 
   for (let i = 0; i < 25; i++) {
     const candidate = i === 0 ? base : `${base}${i < 10 ? i : Math.floor(Math.random() * 9000) + 1000}`;
-    if (USERNAME_RE.test(candidate) && !(await usernameTaken(candidate, address))) return candidate;
+    if (USERNAME_RE.test(candidate) && !(await usernameTaken(candidate, { email: address }))) return candidate;
   }
   return `${base.slice(0, 12)}${Date.now() % 100000000}`;
 }
@@ -390,7 +357,7 @@ authRouter.post(
       return res.json({ user: existing.toSelf() });
     }
 
-    if (await usernameTaken(req.body.username, token.email)) {
+    if (await usernameTaken(req.body.username, { email: token.email })) {
       const error = new HttpError(409, 'That username is taken');
       error.field = 'username';
       throw error;

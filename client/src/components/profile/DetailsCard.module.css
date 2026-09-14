@@ -1,0 +1,204 @@
+.details {
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(150deg, var(--accent-soft), transparent 55%), var(--surface);
+}
+
+.identity {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.names {
+  flex: 1;
+  min-width: 0;
+}
+
+.username {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+
+.since {
+  margin: 6px 0 0;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.editButton {
+  align-self: flex-start;
+}
+
+.rows {
+  margin: 0;
+  padding-top: 20px;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr);
+  gap: 12px;
+  padding: 12px 0;
+}
+
+.row + .row {
+  border-top: 1px solid var(--border);
+}
+
+.row dt {
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.row dd {
+  margin: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.row dd.muted {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+/* Edit mode */
+
+/* Fills the card so the actions row sits in the bottom corners even when the ratings card is taller. */
+.form {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.editIdentity {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.usernameField {
+  flex: 1;
+  min-width: 0;
+}
+
+.avatarButton {
+  position: relative;
+  flex-shrink: 0;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  box-shadow: 0 0 0 2px transparent;
+  cursor: pointer;
+  transition: box-shadow 0.15s ease;
+}
+
+.avatarButton > span:first-child {
+  display: grid;
+}
+
+.avatarButton:hover,
+.avatarButtonOpen {
+  box-shadow: 0 0 0 3px var(--accent);
+}
+
+.avatarBadge {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 2px solid var(--surface);
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.avatarBadge svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.picker {
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+}
+
+.alert {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  background: var(--danger-soft);
+  color: var(--danger);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 4px;
+}
+
+.delete {
+  margin-left: auto;
+  color: var(--danger);
+}
+
+.delete:hover:not(:disabled) {
+  background: var(--danger-soft);
+}
+
+@media (max-width: 479px) {
+  .identity {
+    flex-wrap: wrap;
+  }
+
+  /* Avatar and button share the first line; the name goes underneath. */
+  .editButton {
+    order: 1;
+    margin-left: auto;
+  }
+
+  .identity .names {
+    order: 2;
+    flex-basis: 100%;
+  }
+
+  .editIdentity {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .avatarButton {
+    align-self: center;
+  }
+
+  .row {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .username {
+    font-size: 28px;
+  }
+}

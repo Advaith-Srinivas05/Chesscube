@@ -1,0 +1,38 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+  gap: 8px;
+}
+
+.option {
+  display: grid;
+  place-items: center;
+  justify-self: center;
+  width: 60px;
+  height: 60px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  box-shadow: 0 0 0 2px transparent;
+  cursor: pointer;
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.option:hover {
+  box-shadow: 0 0 0 2px var(--border);
+}
+
+.option.selected {
+  box-shadow: 0 0 0 3px var(--accent);
+}
+
+.option:focus-visible {
+  outline-offset: 4px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .option:active {
+    transform: scale(0.95);
+  }
+}
