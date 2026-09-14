@@ -11,6 +11,7 @@ const TINT = 'rgba(255, 196, 64, 0.38)';
 const PREMOVE_TINT = 'rgba(40, 70, 160, 0.34)';
 const DOT = 'rgba(0, 0, 0, 0.22)';
 const PREMOVE_DOT = 'rgba(40, 70, 160, 0.42)';
+const HIGHLIGHTS = { good: 'rgba(70, 160, 70, 0.55)', bad: 'rgba(205, 55, 45, 0.55)' };
 
 const fill = (color) => `linear-gradient(${color}, ${color})`;
 const dot = (color) => `radial-gradient(circle, ${color} 19%, transparent 20%)`;
@@ -42,6 +43,7 @@ function piecesFromFen(fen) {
  * Playable board. The parent owns the game: it passes the position and legal destinations and
  * applies moves from `onMove`. Premoves are enabled by passing `onPremove`.
  * `showDests` and `autoQueen` default to the player's settings.
+ * `highlights` tints squares for feedback: { e4: 'good' | 'bad' }.
  */
 export default function InteractiveBoard({
   id = 'board',
@@ -60,6 +62,7 @@ export default function InteractiveBoard({
   onPremove,
   onCancelPremove,
   variant = 'standard',
+  highlights = null,
 }) {
   const { settings } = useSettings();
   const { options: appearance, pieceSet } = useBoardAppearance();
@@ -178,13 +181,16 @@ export default function InteractiveBoard({
       add(premove.from, fill(PREMOVE_TINT));
       add(premove.to, fill(PREMOVE_TINT));
     }
+    for (const [square, kind] of Object.entries(highlights ?? {})) {
+      if (HIGHLIGHTS[kind]) add(square, fill(HIGHLIGHTS[kind]));
+    }
     if (lastMove) {
       add(lastMove[0], fill(TINT));
       add(lastMove[1], fill(TINT));
     }
 
     return Object.fromEntries(Object.entries(layers).map(([square, list]) => [square, { background: list.join(', ') }]));
-  }, [check, dotsVisible, canPremove, targets, pieces, selected, premove, lastMove]);
+  }, [check, dotsVisible, canPremove, targets, pieces, selected, premove, highlights, lastMove]);
 
   return (
     <div className={styles.board} onContextMenu={(event) => event.preventDefault()}>

@@ -1,11 +1,11 @@
 /* Palette taken from the logo: rook brown #3c2206 on parchment #fffced. */
 :root {
   --bg: #fbf6e8;
-  --surface: #fffdf5;
-  --surface-2: #f3ecd8;
-  --border: #e6dbc1;
+  --surface: #f5eedc;
+  --surface-2: #ebe2cb;
+  --border: #dccfb0;
   --text: #2b1a07;
-  --text-muted: #7a654d;
+  --text-muted: #6f5b44;
   --logo: #3c2206;
   --accent: #5a3712;
   --accent-hover: #3c2206;

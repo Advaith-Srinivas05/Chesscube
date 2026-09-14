@@ -1,0 +1,269 @@
+.panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.side {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid var(--text);
+  border-radius: 4px;
+}
+
+.white {
+  background: #fffdf5;
+}
+
+.black {
+  background: #2b1a07;
+}
+
+.prompt {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.puzzleRating {
+  margin-left: auto;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.status {
+  padding: 12px 14px;
+  border-left: 3px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-2);
+}
+
+.good {
+  border-left-color: var(--success);
+  background: var(--success-soft);
+}
+
+.bad {
+  border-left-color: var(--danger);
+  background: var(--danger-soft);
+}
+
+.statusTitle {
+  margin: 0;
+  font-weight: 800;
+}
+
+.good .statusTitle {
+  color: var(--success);
+}
+
+.bad .statusTitle {
+  color: var(--danger);
+}
+
+.text {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.rating {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  column-gap: 10px;
+}
+
+.streakIcon {
+  grid-row: span 2;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.ratingLabel {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.rating:not(:has(.streakIcon)) .ratingLabel,
+.rating:not(:has(.streakIcon)) .ratingValue,
+.rating:not(:has(.streakIcon)) .error {
+  grid-column: 1 / -1;
+}
+
+.ratingValue {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.ratingSub {
+  grid-column: 2;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.provisional {
+  margin-left: -6px;
+  color: var(--text-muted);
+  font-size: 18px;
+}
+
+.diff {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 4px;
+  font-family: var(--font-body);
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.arrow {
+  width: 24px;
+  height: 24px;
+  fill: currentColor;
+}
+
+.gain {
+  color: var(--success);
+}
+
+.loss {
+  color: var(--danger);
+}
+
+.ratingNote {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.link {
+  color: var(--accent);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.divider {
+  height: 1px;
+  background: var(--border);
+}
+
+.themeSection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sectionTitle {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.themes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.themes li {
+  padding: 3px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-2);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.footer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: auto;
+  padding-top: 4px;
+}
+
+.hint {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.hint kbd {
+  padding: 1px 6px;
+  border: 1px solid var(--border);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  background: var(--surface-2);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.errorTitle {
+  margin: 0;
+  font-weight: 800;
+  color: var(--danger);
+}
+
+.error {
+  color: var(--danger);
+  font-size: 13px;
+}
+
+@media (max-width: 639px) {
+  .panel {
+    padding: 16px;
+  }
+}

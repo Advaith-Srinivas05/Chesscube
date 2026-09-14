@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
+import { PROVISIONAL_RD } from '../lib/glicko2.js';
+import { effectiveStreak } from '../services/dailyPuzzle.js';
 import { randomAvatarId } from '../shared/avatars.js';
-
-const PROVISIONAL_RD = 110;
 
 // Glicko-2 state per category, with short keys because every user document carries six of them:
 // r = rating, rd = rating deviation, vol = volatility, n = rated games (or puzzles) played.
@@ -80,8 +80,8 @@ userSchema.methods.toPublic = function toPublic() {
     username: this.username,
     avatar: this.avatar,
     ratings: publicRatings(this.ratings),
-    // The effective streak (reset after a missed day) is worked out in step 6.5.
-    puzzle: { streak: this.puzzle?.streak ?? 0, best: this.puzzle?.best ?? 0 },
+    // The effective streak: already 0 once too many days were missed.
+    puzzle: { streak: effectiveStreak(this.puzzle), best: this.puzzle?.best ?? 0 },
     createdAt: this.createdAt,
   };
 };

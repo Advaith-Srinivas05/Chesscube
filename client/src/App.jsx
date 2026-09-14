@@ -3,6 +3,7 @@ import GuestOnly from './components/GuestOnly.jsx';
 import Layout from './components/Layout.jsx';
 import RequireAuth from './components/RequireAuth.jsx';
 import ChooseUsername from './pages/ChooseUsername.jsx';
+import DailyPuzzle from './pages/DailyPuzzle.jsx';
 import ForgotPassword from './pages/ForgotPassword.jsx';
 import Home from './pages/Home.jsx';
 import Leaderboard from './pages/Leaderboard.jsx';
@@ -28,6 +29,7 @@ export default function App() {
         <Route path="play" element={<Play />} />
         <Route path="play/computer" element={<PlayComputer />} />
         <Route path="puzzles" element={<Puzzles />} />
+        <Route path="puzzles/daily" element={<RequireAuth><DailyPuzzle /></RequireAuth>} />
         <Route path="learn" element={<Learn />} />
         <Route path="leaderboard" element={<Leaderboard />} />
         <Route path="socials" element={<Socials />} />

@@ -5,6 +5,7 @@ import { env } from './config/env.js';
 import { optionalAuth } from './middleware/auth.js';
 import { errorHandler, notFound } from './middleware/errors.js';
 import { authRouter } from './routes/auth.js';
+import { puzzlesRouter } from './routes/puzzles.js';
 import { usersRouter } from './routes/users.js';
 
 const BODY_METHODS = new Set(['POST', 'PATCH', 'PUT', 'DELETE']);
@@ -37,6 +38,7 @@ export function createApp() {
   app.use('/api', optionalAuth);
   app.use('/api/auth', authRouter);
   app.use('/api/users', usersRouter);
+  app.use('/api/puzzles', puzzlesRouter);
 
   app.use(notFound);
   app.use(errorHandler);

@@ -1,0 +1,35 @@
+.trainer {
+  display: grid;
+  /* The board shrinks on short screens so it stays in view. */
+  grid-template-columns: minmax(0, min(640px, calc(100dvh - 150px))) minmax(280px, 340px);
+  justify-content: center;
+  gap: 24px;
+  /* The side column matches the board's height: the daily card lines up with the board's bottom edge. */
+  align-items: stretch;
+}
+
+.boardColumn {
+  align-self: start;
+  min-width: 0;
+}
+
+.placeholder {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 6px;
+  background: var(--surface-2);
+}
+
+.side {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+@media (max-width: 1023px) {
+  .trainer {
+    grid-template-columns: minmax(0, 640px);
+    gap: 16px;
+  }
+}

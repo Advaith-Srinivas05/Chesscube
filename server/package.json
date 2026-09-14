@@ -7,7 +7,9 @@
   "scripts": {
     "dev": "node --watch --env-file-if-exists=.env src/index.js",
     "start": "node src/index.js",
-    "test": "node --test"
+    "test": "node --test",
+    "import:puzzles": "node --env-file-if-exists=.env scripts/importPuzzles.js",
+    "storage": "node --env-file-if-exists=.env scripts/storageReport.js"
   },
   "engines": {
     "node": ">=22"
