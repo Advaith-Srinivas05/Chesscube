@@ -6,6 +6,7 @@ import { HttpError } from '../middleware/errors.js';
 import { limiter } from '../middleware/rateLimit.js';
 import { validate } from '../middleware/validate.js';
 import { EmailCode } from '../models/EmailCode.js';
+import { Friendship } from '../models/Friendship.js';
 import { PendingSignup } from '../models/PendingSignup.js';
 import { User } from '../models/User.js';
 import { deleteAccount } from '../services/accountDeletion.js';
@@ -19,6 +20,7 @@ import {
   RESEND_COOLDOWN_MS,
 } from '../services/codes.js';
 import { emailChangeEmail } from '../services/emailTemplates.js';
+import { MINI_USER_FIELDS, miniUser, relationsWith, relationWith } from '../services/friends.js';
 import { sendMail } from '../services/mailer.js';
 import { hashPassword, verifyPassword } from '../services/passwords.js';
 import { clearSessionCookie, signIn } from '../services/tokens.js';
@@ -27,6 +29,8 @@ import { isAvatarId } from '../shared/avatars.js';
 import { PASSWORD_MAX } from '../shared/validation.js';
 
 const MINUTE = 60 * 1000;
+const SEARCH_LIMIT = 10;
+const FRIENDS_PREVIEW = 5;
 
 function fieldError(status, message, field, code) {
   const error = new HttpError(status, message, code);
@@ -195,10 +199,54 @@ usersRouter.delete(
   }
 );
 
-// Public profile, for guests too. Case-insensitive.
+// Username prefix search for adding friends. Defined before /:username, so "search" is a reserved username.
+usersRouter.get(
+  '/search',
+  requireAuth,
+  limiter({ windowMs: MINUTE, limit: 120, keyGenerator: (req) => req.user.id }),
+  validate({ query: z.object({ q: z.string().trim().min(2, 'Type at least 2 characters').max(20) }) }),
+  async (req, res) => {
+    const prefix = req.validatedQuery.q.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const users = await User.find({ usernameLower: { $regex: `^${prefix}` }, _id: { $ne: req.user._id } })
+      .sort({ usernameLower: 1 })
+      .limit(SEARCH_LIMIT)
+      .select(MINI_USER_FIELDS)
+      .lean();
+    const relations = await relationsWith(req.user._id, users.map((user) => user._id));
+    res.json({ users: users.map((user) => ({ ...miniUser(user), ...relations.get(String(user._id)) })) });
+  }
+);
+
+function findByUsername(name) {
+  return name.length <= 20 ? User.findOne({ usernameLower: name.toLowerCase() }) : null;
+}
+
+// Public profile, for guests too. Case-insensitive. A signed-in viewer also gets their relation to the player.
 usersRouter.get('/:username', async (req, res) => {
-  const name = req.params.username;
-  const user = name.length <= 20 ? await User.findOne({ usernameLower: name.toLowerCase() }) : null;
+  const user = await findByUsername(req.params.username);
   if (!user) throw new HttpError(404, 'Player not found');
-  res.json({ user: user.toPublic() });
+  const viewer = req.user;
+  const relation = viewer && !viewer._id.equals(user._id) ? await relationWith(viewer._id, user._id) : {};
+  res.json({ user: { ...user.toPublic(), ...relation } });
+});
+
+// Friends at a glance for a profile: the count and the most recent few.
+usersRouter.get('/:username/friends', async (req, res) => {
+  const user = await findByUsername(req.params.username);
+  if (!user) throw new HttpError(404, 'Player not found');
+  const query = { $or: [{ from: user._id }, { to: user._id }], status: 'accepted' };
+  const [count, recent] = await Promise.all([
+    Friendship.countDocuments(query),
+    Friendship.find(query)
+      .sort({ acceptedAt: -1 })
+      .limit(FRIENDS_PREVIEW)
+      .populate('from', MINI_USER_FIELDS)
+      .populate('to', MINI_USER_FIELDS)
+      .lean(),
+  ]);
+  const friends = recent
+    .map((friendship) => (friendship.from?._id.equals(user._id) ? friendship.to : friendship.from))
+    .filter(Boolean)
+    .map(miniUser);
+  res.json({ count, friends });
 });

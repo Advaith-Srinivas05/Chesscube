@@ -53,6 +53,7 @@ export default function Navbar() {
   useEffect(() => setMenuOpen(false), [location.pathname]);
 
   const isDark = resolvedTheme === 'dark';
+  const requests = user?.incomingRequests ?? 0;
 
   return (
     <header className={styles.header}>
@@ -65,6 +66,14 @@ export default function Navbar() {
           {LINKS.map(({ to, label }) => (
             <NavLink key={to} to={to} className={linkClass}>
               {label}
+              {to === '/socials' && requests > 0 && (
+                <>
+                  <span className={styles.badge} aria-hidden="true">
+                    {requests > 99 ? '99+' : requests}
+                  </span>
+                  <span className="sr-only">, {requests} friend {requests === 1 ? 'request' : 'requests'}</span>
+                </>
+              )}
             </NavLink>
           ))}
         </div>
@@ -97,10 +106,11 @@ export default function Navbar() {
           <button
             type="button"
             className={`${styles.iconButton} ${styles.menuToggle}`}
-            aria-label="Toggle navigation"
+            aria-label={requests > 0 ? 'Toggle navigation (new friend requests)' : 'Toggle navigation'}
             aria-expanded={menuOpen}
             onClick={() => setMenuOpen((value) => !value)}
           >
+            {requests > 0 && !menuOpen && <span className={styles.menuDot} aria-hidden="true" />}
             <svg viewBox="0 0 24 24" aria-hidden="true">
               {menuOpen ? <path d="M6 6l12 12M18 6L6 18" /> : <path d="M4 7h16M4 12h16M4 17h16" />}
             </svg>

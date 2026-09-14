@@ -5,6 +5,7 @@ import { env } from './config/env.js';
 import { optionalAuth } from './middleware/auth.js';
 import { errorHandler, notFound } from './middleware/errors.js';
 import { authRouter } from './routes/auth.js';
+import { friendsRouter } from './routes/friends.js';
 import { leaderboardRouter } from './routes/leaderboard.js';
 import { puzzlesRouter } from './routes/puzzles.js';
 import { usersRouter } from './routes/users.js';
@@ -41,6 +42,7 @@ export function createApp() {
   app.use('/api/users', usersRouter);
   app.use('/api/puzzles', puzzlesRouter);
   app.use('/api/leaderboard', leaderboardRouter);
+  app.use('/api/friends', friendsRouter);
 
   app.use(notFound);
   app.use(errorHandler);

@@ -6,6 +6,7 @@ import Avatar from '../Avatar.jsx';
 import PasswordChecklist from '../PasswordChecklist.jsx';
 import PasswordField from '../PasswordField.jsx';
 import UsernameStatus from '../UsernameStatus.jsx';
+import FriendButton from '../social/FriendButton.jsx';
 import Button from '../ui/Button.jsx';
 import Field from '../ui/Field.jsx';
 import { useToast } from '../ui/Toast.jsx';
@@ -22,6 +23,7 @@ const memberSince = (date) => new Date(date).toLocaleDateString('en-GB', { month
 // `onSaved(user)` runs after a profile edit (the profile page uses it to follow a rename).
 export default function DetailsCard({ user, isOwn = false, onSaved }) {
   const [editing, setEditing] = useState(false);
+  const { user: viewer } = useAuth();
 
   return (
     <section className={`${card.card} ${styles.details}`} aria-label="Player details">
@@ -36,10 +38,12 @@ export default function DetailsCard({ user, isOwn = false, onSaved }) {
               <p className={styles.since}>Member since {memberSince(user.createdAt)}</p>
               <PresenceStatus user={user} />
             </div>
-            {isOwn && (
+            {isOwn ? (
               <Button variant="secondary" size="sm" className={styles.editButton} onClick={() => setEditing(true)}>
                 Edit profile
               </Button>
+            ) : (
+              viewer && <FriendButton key={user.username} profile={user} className={styles.editButton} />
             )}
           </div>
 

@@ -7,7 +7,7 @@ export const RESERVED_USERNAMES = [
   'admin', 'administrator', 'mod', 'moderator', 'support', 'help', 'system', 'root',
   'chesscube', 'stockfish', 'computer', 'engine', 'anonymous', 'deleted', 'null', 'undefined',
   'api', 'me', 'settings', 'profile', 'signin', 'signup', 'play', 'puzzles', 'learn',
-  'leaderboard', 'socials',
+  'leaderboard', 'socials', 'search',
 ];
 
 export function usernameIssue(name) {

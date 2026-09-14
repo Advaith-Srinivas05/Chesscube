@@ -19,6 +19,7 @@ import {
   MAX_CODE_ATTEMPTS,
 } from '../services/codes.js';
 import { passwordResetEmail, verificationEmail } from '../services/emailTemplates.js';
+import { countIncomingRequests } from '../services/friends.js';
 import { sendMail } from '../services/mailer.js';
 import { hashPassword, verifyPassword } from '../services/passwords.js';
 import { clearSessionCookie, signIn, signPurposeToken, verifyPurposeToken } from '../services/tokens.js';
@@ -56,8 +57,10 @@ const DUMMY_HASH = await hashPassword('timing-equaliser-Aa1');
 
 export const authRouter = Router();
 
-authRouter.get('/me', (req, res) => {
-  res.json({ user: req.user?.toSelf() ?? null });
+authRouter.get('/me', async (req, res) => {
+  if (!req.user) return res.json({ user: null });
+  // incomingRequests (the navbar badge) is only sent here; the client keeps it when other routes return the user.
+  res.json({ user: { ...req.user.toSelf(), incomingRequests: await countIncomingRequests(req.user._id) } });
 });
 
 authRouter.post('/logout', (req, res) => {

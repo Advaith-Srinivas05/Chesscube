@@ -1,19 +1,21 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../lib/api.js';
 
 const AuthContext = createContext(null);
 
 // Accounts are optional: `user` is null for guests. status is 'loading' until /auth/me has answered.
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
+  const [user, replaceUser] = useState(null);
   const [status, setStatus] = useState('loading');
+  const userIdRef = useRef(null);
+  userIdRef.current = user?.id ?? null;
 
   const refresh = useCallback(async () => {
     try {
       const data = await api.get('/auth/me');
-      setUser(data.user);
+      replaceUser(data.user);
     } catch {
-      setUser(null);
+      replaceUser(null);
     } finally {
       setStatus('ready');
     }
@@ -22,6 +24,22 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     refresh();
   }, [refresh]);
+
+  // Only /auth/me reports incomingRequests (the navbar badge), so a user from any other response keeps
+  // the current count. A different account (a new sign-in) fetches its own.
+  const setUser = useCallback(
+    (next) => {
+      if (!next || next.incomingRequests !== undefined) {
+        replaceUser(next);
+      } else if (userIdRef.current === next.id) {
+        replaceUser((current) => ({ incomingRequests: current?.incomingRequests, ...next }));
+      } else {
+        replaceUser(next);
+        refresh();
+      }
+    },
+    [refresh]
+  );
 
   const actions = useMemo(() => {
     const withUser = (promise) =>
@@ -56,9 +74,12 @@ export function AuthProvider({ children }) {
         }
       },
     };
-  }, []);
+  }, [setUser]);
 
-  const value = useMemo(() => ({ user, status, refresh, setUser, ...actions }), [user, status, refresh, actions]);
+  const value = useMemo(
+    () => ({ user, status, refresh, setUser, ...actions }),
+    [user, status, refresh, setUser, actions]
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
