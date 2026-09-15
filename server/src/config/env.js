@@ -14,28 +14,31 @@ if (Buffer.byteLength(jwtSecret) < JWT_SECRET_MIN_BYTES) {
 }
 const isProd = nodeEnv === 'production';
 
-// Email goes out through one of two Gmail routes:
-// - the Gmail API over HTTPS (production: free hosts such as Render block the SMTP ports), or
+// Email goes out from the owner's Gmail account through one of two routes:
+// - a Google Apps Script web app called over HTTPS (production: free hosts such as Render block the SMTP ports), or
 // - SMTP with an app password (handy locally).
 // With neither, emails are logged to the console, which is only acceptable in development.
-const GMAIL_API_VARS = ['GMAIL_USER', 'GMAIL_CLIENT_ID', 'GMAIL_CLIENT_SECRET', 'GMAIL_REFRESH_TOKEN'];
-const gmailValues = GMAIL_API_VARS.map((name) => process.env[name]?.trim() || null);
-const gmailSet = gmailValues.filter(Boolean).length;
-if (gmailSet > 0 && gmailSet < GMAIL_API_VARS.length) {
-  const missing = GMAIL_API_VARS.filter((_, index) => !gmailValues[index]);
-  throw new Error(`Gmail API email is partly configured; also set ${missing.join(', ')}`);
+const MAIL_SCRIPT_SECRET_MIN = 32;
+const scriptUrl = process.env.MAIL_SCRIPT_URL?.trim() || null;
+const scriptSecret = process.env.MAIL_SCRIPT_SECRET?.trim() || null;
+if (Boolean(scriptUrl) !== Boolean(scriptSecret)) {
+  throw new Error('Set both MAIL_SCRIPT_URL and MAIL_SCRIPT_SECRET, or neither');
 }
-const gmailApi = gmailSet
-  ? { user: gmailValues[0], clientId: gmailValues[1], clientSecret: gmailValues[2], refreshToken: gmailValues[3] }
-  : null;
+if (scriptUrl && !/^https:\/\/script\.google\.com\/macros\/s\/[\w-]+\/exec$/.test(scriptUrl)) {
+  throw new Error('MAIL_SCRIPT_URL must be the web app URL from Apps Script (https://script.google.com/macros/s/…/exec)');
+}
+if (scriptSecret && scriptSecret.length < MAIL_SCRIPT_SECRET_MIN) {
+  throw new Error(`MAIL_SCRIPT_SECRET must be at least ${MAIL_SCRIPT_SECRET_MIN} characters`);
+}
+const mailScript = scriptUrl ? { url: scriptUrl, secret: scriptSecret } : null;
 
 const smtpUser = process.env.SMTP_USER?.trim() || null;
 // Google shows app passwords in groups of four; the spaces aren't part of it.
 const smtpPass = process.env.SMTP_PASS?.replace(/\s+/g, '') || null;
 const smtp = smtpUser && smtpPass ? { user: smtpUser, pass: smtpPass } : null;
 
-if (isProd && !gmailApi && !smtp) {
-  throw new Error('Email is required in production: set GMAIL_USER, GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET and GMAIL_REFRESH_TOKEN (or SMTP_USER and SMTP_PASS)');
+if (isProd && !mailScript && !smtp) {
+  throw new Error('Email is required in production: set MAIL_SCRIPT_URL and MAIL_SCRIPT_SECRET (or SMTP_USER and SMTP_PASS)');
 }
 
 export const env = {
@@ -45,7 +48,7 @@ export const env = {
   mongoUri: required('MONGODB_URI'),
   jwtSecret,
   googleClientId: process.env.GOOGLE_CLIENT_ID || null,
-  gmailApi,
+  mailScript,
   smtp,
   clientOrigins: (process.env.CLIENT_ORIGIN ?? 'http://localhost:3000')
     .split(',')

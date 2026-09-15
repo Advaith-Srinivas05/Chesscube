@@ -1,24 +1,38 @@
-import { OAuth2Client } from 'google-auth-library';
 import nodemailer from 'nodemailer';
 import { env } from '../config/env.js';
 
-const GMAIL_SEND_URL = 'https://gmail.googleapis.com/gmail/v1/users/me/messages/send';
+const SCRIPT_TIMEOUT_MS = 20_000;
 
-// Builds the raw MIME message only; the Gmail API route sends it over HTTPS.
-const composer = nodemailer.createTransport({ streamTransport: true, buffer: true });
-
-function gmailApiTransport({ user, clientId, clientSecret, refreshToken }) {
-  const client = new OAuth2Client({ clientId, clientSecret });
-  client.setCredentials({ refresh_token: refreshToken });
+// Posts to a Google Apps Script web app that sends the email with MailApp from the owner's Gmail account. Works over
+// HTTPS, so it runs on hosts that block the SMTP ports. The script replies { ok } with HTTP 200 even on failure.
+function appsScriptTransport({ url, secret }) {
+  async function call(payload) {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ secret, ...payload }),
+      redirect: 'follow', // Apps Script answers through a redirect to googleusercontent.com
+      signal: AbortSignal.timeout(SCRIPT_TIMEOUT_MS),
+    });
+    const text = await res.text();
+    let data = null;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      // An HTML page means the script crashed, isn't deployed for "Anyone", or hit its quota.
+    }
+    if (!res.ok || !data?.ok) {
+      const error = new Error('Apps Script mail request failed');
+      error.code = data?.error ?? (res.ok ? 'SCRIPT_NOT_JSON' : `HTTP_${res.status}`);
+      throw error;
+    }
+    return data;
+  }
   return {
-    name: 'Gmail API',
-    from: user,
-    // Exchanging the refresh token proves the credentials work without sending anything.
-    verify: () => client.getAccessToken(),
-    async send(message) {
-      const { message: raw } = await composer.sendMail(message);
-      await client.request({ url: GMAIL_SEND_URL, method: 'POST', data: { raw: raw.toString('base64url') } });
-    },
+    name: 'Apps Script',
+    // The script checks the secret and returns without sending anything.
+    verify: () => call({ ping: true }),
+    send: ({ to, subject, text, html }) => call({ to, subject, text, html, name: 'Chesscube' }),
   };
 }
 
@@ -32,19 +46,16 @@ function smtpTransport({ user, pass }) {
   });
   return {
     name: 'SMTP',
-    from: user,
     verify: () => transporter.verify(),
-    send: (message) => transporter.sendMail(message),
+    send: (message) => transporter.sendMail({ from: `"Chesscube" <${user}>`, ...message }),
   };
 }
 
-const transport = env.gmailApi ? gmailApiTransport(env.gmailApi) : env.smtp ? smtpTransport(env.smtp) : null;
+const transport = env.mailScript ? appsScriptTransport(env.mailScript) : env.smtp ? smtpTransport(env.smtp) : null;
 
 // Error messages can quote recipient addresses, so logs get only codes and statuses.
 export function mailErrorSummary(err) {
-  const apiError = err.response?.data?.error;
-  const detail = typeof apiError === 'string' ? apiError : apiError?.status;
-  const parts = new Set([err.code, err.responseCode, err.response?.status, detail].filter(Boolean).map(String));
+  const parts = new Set([err.code, err.responseCode].filter(Boolean).map(String));
   return [...parts].join(' ') || err.name || 'unknown error';
 }
 
@@ -65,5 +76,5 @@ export async function sendMail({ to, subject, text, html }) {
     console.log(`\n--- Email (not configured) ---\nTo: ${to}\nSubject: ${subject}\n\n${text}\n-----------------------------------\n`);
     return;
   }
-  await transport.send({ from: `"Chesscube" <${transport.from}>`, to, subject, text, html });
+  await transport.send({ to, subject, text, html });
 }
