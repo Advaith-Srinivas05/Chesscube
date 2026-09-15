@@ -1,0 +1,190 @@
+.list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto auto;
+  grid-template-areas: 'pill opponent mode details analyse';
+  align-items: center;
+  gap: 8px 16px;
+  padding: 10px 8px;
+  border-top: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+  transition: background-color 0.15s ease;
+}
+
+.row:first-child {
+  border-top-color: transparent;
+}
+
+.row:hover {
+  background: var(--accent-soft);
+}
+
+/* The whole row opens the game; the Analyse link sits above it. */
+.rowLink {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.pill {
+  grid-area: pill;
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  font-weight: 800;
+  font-size: 13px;
+}
+
+.win {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.loss {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.draw {
+  background: var(--surface-2);
+  color: var(--text-muted);
+}
+
+.opponent {
+  grid-area: opponent;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.name {
+  overflow: hidden;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rating,
+.muted {
+  color: var(--text-muted);
+}
+
+.mode {
+  grid-area: mode;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.mode svg {
+  color: var(--text-muted);
+}
+
+.tag {
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.details {
+  grid-area: details;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  white-space: nowrap;
+}
+
+.gain {
+  color: var(--success);
+  font-weight: 700;
+}
+
+.drop {
+  color: var(--danger);
+  font-weight: 700;
+}
+
+.analyse {
+  position: relative;
+  z-index: 1;
+  grid-area: analyse;
+  padding: 5px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.analyse:hover {
+  border-color: var(--accent);
+}
+
+.loading {
+  display: grid;
+  place-items: center;
+  min-height: 160px;
+}
+
+.more {
+  display: flex;
+  justify-content: center;
+  margin-top: 14px;
+}
+
+.error {
+  margin: 10px 0 0;
+  color: var(--danger);
+  font-size: 14px;
+}
+
+@media (max-width: 767px) {
+  .row {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      'pill opponent analyse'
+      'pill mode details';
+    gap: 4px 12px;
+  }
+
+  .mode,
+  .details {
+    font-size: 13px;
+  }
+
+  .details {
+    justify-self: end;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 420px) {
+  .row {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      'pill opponent analyse'
+      'pill mode mode'
+      'pill details details';
+  }
+
+  .details {
+    justify-self: start;
+  }
+}

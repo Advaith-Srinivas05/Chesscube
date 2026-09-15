@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../lib/api.js';
+import { setSocketAuth } from '../lib/socket.js';
 
 const AuthContext = createContext(null);
 
@@ -24,6 +25,11 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     refresh();
   }, [refresh]);
+
+  // The game server connection follows the signed-in account.
+  useEffect(() => {
+    setSocketAuth({ ready: status === 'ready', userId: user?.id ?? null });
+  }, [status, user?.id]);
 
   // Only /auth/me reports incomingRequests (the navbar badge), so a user from any other response keeps
   // the current count. A different account (a new sign-in) fetches its own.

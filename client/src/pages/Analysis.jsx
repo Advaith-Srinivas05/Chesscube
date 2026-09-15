@@ -7,8 +7,11 @@ import PositionTools from '../components/analysis/PositionTools.jsx';
 import InteractiveBoard from '../components/board/InteractiveBoard.jsx';
 import Button from '../components/ui/Button.jsx';
 import EmptyState from '../components/ui/EmptyState.jsx';
+import Spinner from '../components/ui/Spinner.jsx';
 import { useToast } from '../components/ui/Toast.jsx';
+import { useAuth } from '../context/AuthContext.jsx';
 import useAnalysis, { useEngineLines } from '../hooks/useAnalysis.js';
+import { api } from '../lib/api.js';
 import { createEngine } from '../lib/engine.js';
 import styles from './Analysis.module.css';
 
@@ -126,10 +129,52 @@ function AnalysisBoard({ engine, initial }) {
   );
 }
 
+// /learn/analysis/:gameId — a stored game, oriented for the viewer when they played it.
+function StoredGameAnalysis({ gameId, engine }) {
+  const { user } = useAuth();
+  const [state, setState] = useState({ status: 'loading' });
+
+  useEffect(() => {
+    const controller = new AbortController();
+    setState({ status: 'loading' });
+    api
+      .get(`/games/${encodeURIComponent(gameId)}`, { signal: controller.signal })
+      .then(({ game }) => {
+        const orientation = user && game.black.username === user.username ? 'black' : 'white';
+        setState({ status: 'ready', initial: { variant: game.variant, fen: game.initialFen ?? undefined, moves: game.moves, orientation } });
+      })
+      .catch((err) => {
+        if (err.name !== 'AbortError') setState({ status: err.status === 409 ? 'live' : 'notfound' });
+      });
+    return () => controller.abort();
+  }, [gameId, user?.username]);
+
+  if (state.status === 'loading') {
+    return (
+      <div className={styles.loading}>
+        <Spinner label="Loading the game" />
+      </div>
+    );
+  }
+  if (state.status === 'ready') return <AnalysisBoard engine={engine} initial={state.initial} />;
+  return (
+    <EmptyState
+      className={styles.notFound}
+      title={state.status === 'live' ? 'This game is still being played' : 'Game not found'}
+      text={state.status === 'live' ? 'You can analyse it once it has finished.' : "This game doesn't exist or can't be opened."}
+      action={
+        <Button as={Link} to="/learn/analysis">
+          Open an empty board
+        </Button>
+      }
+    />
+  );
+}
+
 /**
  * /learn/analysis?fen=&variant= — free analysis board, open to guests.
- * Router state { variant, initialFen, moves, orientation } opens a finished game (vs computer, later online games).
- * /learn/analysis/:gameId loads a stored game once games are saved.
+ * Router state { variant, initialFen, moves, orientation } opens a finished game (vs computer or online).
+ * /learn/analysis/:gameId loads a stored game.
  */
 export default function Analysis() {
   const { gameId } = useParams();
@@ -162,16 +207,7 @@ export default function Analysis() {
     <div className="page">
       <h1 className="sr-only">Analysis board</h1>
       {gameId ? (
-        <EmptyState
-          className={styles.notFound}
-          title="Game not found"
-          text="This game doesn't exist or can't be opened."
-          action={
-            <Button as={Link} to="/learn/analysis">
-              Open an empty board
-            </Button>
-          }
-        />
+        <StoredGameAnalysis key={gameId} gameId={gameId} engine={engine} />
       ) : (
         <AnalysisBoard key={location.key} engine={engine} initial={initial} />
       )}

@@ -3,6 +3,7 @@ import { OAuth2Client } from 'google-auth-library';
 import { z } from 'zod';
 import { env } from '../config/env.js';
 import { code, email, password, username } from '../lib/schemas.js';
+import { requireAuth } from '../middleware/auth.js';
 import { HttpError } from '../middleware/errors.js';
 import { ipKeyGenerator, limiter } from '../middleware/rateLimit.js';
 import { validate } from '../middleware/validate.js';
@@ -61,6 +62,11 @@ authRouter.get('/me', async (req, res) => {
   if (!req.user) return res.json({ user: null });
   // incomingRequests (the navbar badge) is only sent here; the client keeps it when other routes return the user.
   res.json({ user: { ...req.user.toSelf(), incomingRequests: await countIncomingRequests(req.user._id) } });
+});
+
+// Short-lived token the Socket.IO handshake accepts; the socket connects straight to the API origin, without the cookie.
+authRouter.get('/socket-token', requireAuth, (req, res) => {
+  res.json({ token: signPurposeToken({ sub: req.user.id, tv: req.user.tokenVersion }, 'socket', '60s') });
 });
 
 authRouter.post('/logout', (req, res) => {

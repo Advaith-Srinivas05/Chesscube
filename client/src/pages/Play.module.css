@@ -13,10 +13,66 @@
   grid-area: tabs;
 }
 
-.panel {
+.main {
   grid-area: panel;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.panel {
   min-width: 0;
   padding-top: 0;
+}
+
+.resume {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding: 12px 16px;
+  border: 1px solid var(--accent);
+  border-radius: 12px;
+  background: var(--accent-soft);
+}
+
+.resume p {
+  margin: 0;
+  font-weight: 700;
+}
+
+.waiting {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 10px 12px 10px 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.waiting p {
+  flex: 1 1 200px;
+  margin: 0;
+  font-size: 14px;
+}
+
+.guestNote {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.guestNote strong {
+  color: var(--text);
+}
+
+.guestNote a {
+  color: var(--accent);
+  font-weight: 700;
 }
 
 .sidebar {

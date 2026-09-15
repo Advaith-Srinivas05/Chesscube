@@ -7,9 +7,10 @@ const TERMINATIONS = {
   repetition: 'Threefold repetition',
   fiftyMove: 'Fifty-move rule',
   timeout: 'Time out',
+  timeoutVsInsufficient: 'Time out, but not enough material to win',
   resign: 'Resignation',
   agreement: 'Draw by agreement',
-  abandoned: 'Opponent left',
+  abandoned: 'A player left the game',
 };
 
 export function resultHeadline(result, termination) {

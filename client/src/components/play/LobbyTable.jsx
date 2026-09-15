@@ -6,7 +6,7 @@ import styles from './LobbyTable.module.css';
 
 const variantName = (id) => VARIANTS.find((variant) => variant.id === id)?.name ?? id;
 
-// Open custom games. Seeks look like { id, player: { username, avatar } | null (guest), rating, provisional, base, inc, rated, variant }.
+// Open custom games. Seeks look like { id, player: { username, avatar }, rating (null for guests), provisional, base, inc, rated, variant, color }.
 export default function LobbyTable({ seeks = [], onAccept, onCancel, ownSeekId, onCreate }) {
   if (seeks.length === 0) {
     return (

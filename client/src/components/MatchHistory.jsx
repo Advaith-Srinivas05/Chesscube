@@ -1,15 +1,127 @@
+import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { api } from '../lib/api.js';
+import { formatTimeControl } from '../shared/gameModes.js';
+import Avatar from './Avatar.jsx';
+import CategoryIcon from './icons/CategoryIcon.jsx';
 import card from './profile/Card.module.css';
 import Button from './ui/Button.jsx';
 import EmptyState from './ui/EmptyState.jsx';
+import Spinner from './ui/Spinner.jsx';
+import styles from './MatchHistory.module.css';
 
-// Finished games for `username`. Stays empty until games are stored (multiplayer phase).
-export default function MatchHistory({ username, isOwn = false }) {
+const PAGE_SIZE = 20;
+const PILLS = { win: 'W', loss: 'L', draw: 'D' };
+const RESULT_WORDS = { win: 'Won', loss: 'Lost', draw: 'Drew' };
+const DAY = 24 * 60 * 60 * 1000;
+
+// "5 min ago" for the last week, a date after that.
+export function formatPlayedAt(value, now = Date.now()) {
+  const date = new Date(value);
+  const elapsed = now - date.getTime();
+  if (elapsed < 7 * DAY) {
+    const minutes = Math.floor(elapsed / 60000);
+    if (minutes < 1) return 'Just now';
+    if (minutes < 60) return `${minutes} min ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours} h ago`;
+    const days = Math.floor(hours / 24);
+    return days === 1 ? 'Yesterday' : `${days} days ago`;
+  }
+  const sameYear = date.getFullYear() === new Date(now).getFullYear();
+  return date.toLocaleDateString(undefined, { day: 'numeric', month: 'short', ...(sameYear ? {} : { year: 'numeric' }) });
+}
+
+function GameRow({ game }) {
+  const name = game.opponent.username ?? 'Deleted user';
+  const moves = Math.ceil(game.moves / 2);
+  const diff = game.ratingDiff;
+
   return (
-    <section className={card.card} aria-labelledby="history-title">
-      <h2 id="history-title" className={card.title}>
-        Match history
-      </h2>
+    <li className={styles.row}>
+      <Link
+        to={`/game/${game.id}`}
+        className={styles.rowLink}
+        aria-label={`${RESULT_WORDS[game.result]} against ${name}, ${formatTimeControl(game.tc)}, ${formatPlayedAt(game.endedAt)}`}
+      />
+      <span className={`${styles.pill} ${styles[game.result]}`} aria-hidden="true">
+        {PILLS[game.result]}
+      </span>
+      <span className={styles.opponent}>
+        <Avatar id={game.opponent.avatar} deleted={!game.opponent.username} size={30} />
+        <span className={styles.name}>{name}</span>
+        {game.opponent.rating != null && <span className={styles.rating}>{game.opponent.rating}</span>}
+      </span>
+      <span className={styles.mode}>
+        <CategoryIcon category={game.category} size={16} />
+        {formatTimeControl(game.tc)}
+        <span className={styles.muted}>· {game.rated ? 'Rated' : 'Casual'}</span>
+        {game.variant === 'chess960' && <span className={styles.tag}>Chess960</span>}
+      </span>
+      <span className={styles.details}>
+        <span>
+          {moves} move{moves === 1 ? '' : 's'}
+        </span>
+        {diff != null && (
+          <span className={diff > 0 ? styles.gain : diff < 0 ? styles.drop : styles.muted}>
+            {diff > 0 ? `+${diff}` : diff < 0 ? `−${Math.abs(diff)}` : '±0'}
+          </span>
+        )}
+        <time dateTime={game.endedAt} className={styles.muted}>
+          {formatPlayedAt(game.endedAt)}
+        </time>
+      </span>
+      <Link to={`/learn/analysis/${game.id}`} className={styles.analyse}>
+        Analyse
+      </Link>
+    </li>
+  );
+}
+
+// Finished games for `username`, newest first, with "Load more".
+export default function MatchHistory({ username, isOwn = false }) {
+  const [state, setState] = useState({ status: 'loading', games: [], nextBefore: null, loadingMore: false, error: null });
+
+  const load = useCallback(
+    async (before, signal) => {
+      const query = new URLSearchParams({ limit: String(PAGE_SIZE), ...(before ? { before } : {}) });
+      const data = await api.get(`/users/${encodeURIComponent(username)}/games?${query}`, { signal });
+      setState((current) => ({
+        status: 'ready',
+        games: before ? [...current.games, ...data.games] : data.games,
+        nextBefore: data.nextBefore,
+        loadingMore: false,
+        error: null,
+      }));
+    },
+    [username]
+  );
+
+  useEffect(() => {
+    const controller = new AbortController();
+    setState({ status: 'loading', games: [], nextBefore: null, loadingMore: false, error: null });
+    load(null, controller.signal).catch((err) => {
+      if (err.name !== 'AbortError') setState((current) => ({ ...current, status: 'error', error: err.message }));
+    });
+    return () => controller.abort();
+  }, [load]);
+
+  function loadMore() {
+    setState((current) => ({ ...current, loadingMore: true }));
+    load(state.nextBefore).catch((err) => setState((current) => ({ ...current, loadingMore: false, error: err.message })));
+  }
+
+  let body;
+  if (state.status === 'loading') {
+    body = (
+      <div className={styles.loading}>
+        <Spinner label="Loading games" />
+      </div>
+    );
+  } else if (state.status === 'error') {
+    body = <EmptyState title="Couldn't load games" text={state.error} />;
+  } else if (state.games.length === 0) {
+    body = (
       <EmptyState
         icon={
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -27,6 +139,33 @@ export default function MatchHistory({ username, isOwn = false }) {
           )
         }
       />
+    );
+  } else {
+    body = (
+      <>
+        <ul className={styles.list}>
+          {state.games.map((game) => (
+            <GameRow key={game.id} game={game} />
+          ))}
+        </ul>
+        {state.error && <p className={styles.error}>{state.error}</p>}
+        {state.nextBefore && (
+          <div className={styles.more}>
+            <Button variant="secondary" onClick={loadMore} loading={state.loadingMore}>
+              Load more
+            </Button>
+          </div>
+        )}
+      </>
+    );
+  }
+
+  return (
+    <section className={card.card} aria-labelledby="history-title">
+      <h2 id="history-title" className={card.title}>
+        Match history
+      </h2>
+      {body}
     </section>
   );
 }

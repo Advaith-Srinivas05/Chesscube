@@ -3,12 +3,13 @@ import Button from '../ui/Button.jsx';
 import Dialog from '../ui/Dialog.jsx';
 import GameSettingsFields, { DEFAULT_GAME_SETTINGS } from './GameSettingsFields.jsx';
 
-// Custom lobby game. "Create game" only closes the dialog until the lobby exists (plan 10.7).
-export default function CreateGameDialog({ open, onClose, onCreate }) {
+// Custom lobby game. `initial` pre-fills some settings (e.g. "New game" after a finished game).
+export default function CreateGameDialog({ open, onClose, onCreate, initial }) {
   const [settings, setSettings] = useState(DEFAULT_GAME_SETTINGS);
 
   useEffect(() => {
-    if (open) setSettings(DEFAULT_GAME_SETTINGS);
+    if (open) setSettings({ ...DEFAULT_GAME_SETTINGS, ...initial });
+    // Reset only when the dialog opens.
   }, [open]);
 
   function handleCreate() {

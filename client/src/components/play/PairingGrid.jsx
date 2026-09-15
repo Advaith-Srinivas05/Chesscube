@@ -4,7 +4,7 @@ import styles from './PairingGrid.module.css';
 
 const categoryName = (preset) => CATEGORIES.find(({ id }) => id === categoryFor(preset))?.name;
 
-// Preset time controls plus a Custom tile. `searchingId` marks the preset being searched for.
+// Preset time controls (quick lobby games) plus a Custom tile. `searchingId` marks the preset being searched for; clicking it again cancels.
 export default function PairingGrid({ onSelect, onCustom, searchingId }) {
   return (
     <div className={styles.grid}>
@@ -16,6 +16,7 @@ export default function PairingGrid({ onSelect, onCustom, searchingId }) {
             type="button"
             className={`${styles.tile} ${searching ? styles.searching : ''}`}
             aria-busy={searching || undefined}
+            title={searching ? 'Searching for an opponent. Click to cancel.' : undefined}
             onClick={() => onSelect?.(preset)}
           >
             <span className={styles.time}>{preset.id}</span>

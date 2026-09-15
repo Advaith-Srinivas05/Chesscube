@@ -35,9 +35,10 @@ function Action({ icon, label, onClick }) {
   );
 }
 
-// `stats` stays null until live numbers exist.
+// `stats` ({ players, games }) is null until the game server has sent numbers.
 export default function PlaySidebar({ onCreateLobby, onChallengeFriend, onPlayComputer, stats = null }) {
   const count = (value) => (value == null ? '—' : value.toLocaleString());
+  const plural = (value, word) => (value === 1 ? word : `${word}s`);
 
   return (
     <aside className={styles.sidebar} aria-label="More ways to play">
@@ -50,13 +51,13 @@ export default function PlaySidebar({ onCreateLobby, onChallengeFriend, onPlayCo
         <div>
           <dt className="sr-only">Players online</dt>
           <dd>
-            <span className={styles.number}>{count(stats?.players)}</span> players online
+            <span className={styles.number}>{count(stats?.players)}</span> {plural(stats?.players, 'player')} online
           </dd>
         </div>
         <div>
           <dt className="sr-only">Games in play</dt>
           <dd>
-            <span className={styles.number}>{count(stats?.games)}</span> games in play
+            <span className={styles.number}>{count(stats?.games)}</span> {plural(stats?.games, 'game')} in play
           </dd>
         </div>
       </dl>

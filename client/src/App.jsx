@@ -5,6 +5,7 @@ import RequireAuth from './components/RequireAuth.jsx';
 import Analysis from './pages/Analysis.jsx';
 import ChooseUsername from './pages/ChooseUsername.jsx';
 import DailyPuzzle from './pages/DailyPuzzle.jsx';
+import Game from './pages/Game.jsx';
 import ForgotPassword from './pages/ForgotPassword.jsx';
 import Home from './pages/Home.jsx';
 import Leaderboard from './pages/Leaderboard.jsx';
@@ -30,6 +31,7 @@ export default function App() {
         <Route index element={<Home />} />
         <Route path="play" element={<Play />} />
         <Route path="play/computer" element={<PlayComputer />} />
+        <Route path="game/:id" element={<Game />} />
         <Route path="puzzles" element={<Puzzles />} />
         <Route path="puzzles/daily" element={<RequireAuth><DailyPuzzle /></RequireAuth>} />
         <Route path="learn" element={<Learn />} />

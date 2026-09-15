@@ -3,7 +3,7 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 6px 16px;
-  max-width: 1004px;
+  max-width: 984px;
   margin: -12px auto 12px;
 }
 
@@ -36,35 +36,39 @@
   font-size: 14px;
 }
 
-.view {
-  display: grid;
-  /* Board + eval bar; the board shrinks on short screens so it stays in view. */
-  grid-template-columns: minmax(0, min(670px, calc(100dvh - 150px))) minmax(280px, 340px);
-  justify-content: center;
-  gap: 24px;
-  align-items: start;
-}
-
-.boardRow {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 8px;
-  min-width: 0;
-}
-
-.noBar {
-  grid-template-columns: minmax(0, 1fr);
-}
-
-.board {
-  min-width: 0;
-}
-
-.panel {
+.prompts {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  min-width: 0;
+  gap: 8px;
+}
+
+.prompt {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--accent-soft);
+  font-size: 14px;
+}
+
+.prompt p {
+  flex: 1 1 160px;
+  margin: 0;
+  font-weight: 600;
+}
+
+.promptActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.replayControls {
+  display: flex;
+  justify-content: flex-end;
 }
 
 .loading {
@@ -73,25 +77,13 @@
   min-height: 320px;
 }
 
-.notFound {
+.message {
   max-width: 480px;
   margin: 40px auto 0;
-}
-
-@media (max-width: 1023px) {
-  .view {
-    grid-template-columns: minmax(0, 670px);
-    gap: 14px;
-  }
 }
 
 @media (max-width: 639px) {
   .header {
     margin-top: -6px;
-  }
-
-  .boardRow {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 6px;
   }
 }
