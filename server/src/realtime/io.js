@@ -9,6 +9,7 @@ import { identityRoom, setIo, trackSocket } from './connections.js';
 import { listen } from './events.js';
 import { activeGameCount, activeGameOf, registerGameHandlers } from './games.js';
 import { ownSeekOf, registerLobbyHandlers } from './lobby.js';
+import { limitEvents } from './rateLimit.js';
 import './presence.js';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -61,6 +62,7 @@ export function initRealtime(httpServer) {
 
   io.on('connection', (socket) => {
     const { identity } = socket.data;
+    limitEvents(socket);
     socket.join(identityRoom(identity));
     trackSocket(socket);
     registerGameHandlers(socket);

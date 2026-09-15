@@ -5,6 +5,14 @@ import { env } from './config/env.js';
 import { persistActiveGames, restoreGames } from './realtime/games.js';
 import { initRealtime } from './realtime/io.js';
 import { verifyMailer } from './services/mailer.js';
+import { startStorageGuard } from './services/storageGuard.js';
+
+// One line each, so a stray rejection or exception shows up in the host's logs instead of passing silently.
+process.on('unhandledRejection', (reason) => console.error('Unhandled rejection:', reason));
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught exception:', err);
+  process.exit(1);
+});
 
 await mongoose.connect(env.mongoUri);
 console.log('Connected to MongoDB');
@@ -16,6 +24,7 @@ await restoreGames();
 server.listen(env.port, () => {
   console.log(`Server running on port ${env.port}`);
   if (env.isProd) verifyMailer();
+  startStorageGuard();
 });
 
 // Saves live games before exiting so a restart can resume them.

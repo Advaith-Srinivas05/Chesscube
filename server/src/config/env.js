@@ -5,6 +5,13 @@ function required(name) {
 }
 
 const nodeEnv = process.env.NODE_ENV ?? 'development';
+
+// Session and socket tokens are HMAC-signed with this; a short secret can be brute-forced.
+const JWT_SECRET_MIN_BYTES = 32;
+const jwtSecret = required('JWT_SECRET');
+if (Buffer.byteLength(jwtSecret) < JWT_SECRET_MIN_BYTES) {
+  throw new Error(`JWT_SECRET must be at least ${JWT_SECRET_MIN_BYTES} bytes (see .env.example for a generator)`);
+}
 const isProd = nodeEnv === 'production';
 
 const smtpUser = process.env.SMTP_USER?.trim() || null;
@@ -21,7 +28,7 @@ export const env = {
   isProd,
   port: Number(process.env.PORT ?? 3001),
   mongoUri: required('MONGODB_URI'),
-  jwtSecret: required('JWT_SECRET'),
+  jwtSecret,
   googleClientId: process.env.GOOGLE_CLIENT_ID || null,
   smtpUser,
   smtpPass,

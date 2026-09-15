@@ -23,7 +23,7 @@ import {
 import { emailChangeEmail } from '../services/emailTemplates.js';
 import { presenceOf } from '../realtime/presence.js';
 import { MINI_USER_FIELDS, miniUser, relationsWith, relationWith } from '../services/friends.js';
-import { sendMail } from '../services/mailer.js';
+import { mailErrorSummary, sendMail } from '../services/mailer.js';
 import { hashPassword, verifyPassword } from '../services/passwords.js';
 import { clearSessionCookie, signIn } from '../services/tokens.js';
 import { usernameTaken } from '../services/usernames.js';
@@ -137,7 +137,7 @@ usersRouter.post(
     try {
       await sendMail({ to: newEmail, ...emailChangeEmail({ username: user.username, code: newCode }) });
     } catch (err) {
-      console.error('Email failed:', err.message);
+      console.error('Email failed:', mailErrorSummary(err));
       await EmailCode.updateOne({ userId: user._id, purpose: 'email' }, { $set: { lastSentAt: new Date(0) } });
       throw new HttpError(502, "We couldn't send the email. Try again in a moment.");
     }

@@ -19,8 +19,13 @@ export async function verifyMailer() {
     await transporter.verify();
     console.log('SMTP connection verified');
   } catch (err) {
-    console.error('SMTP verification failed:', err.message);
+    console.error('SMTP verification failed:', mailErrorSummary(err));
   }
+}
+
+// SMTP error messages can quote recipient addresses, so logs get only the codes.
+export function mailErrorSummary(err) {
+  return [err.code, err.responseCode].filter(Boolean).join(' ') || err.name || 'unknown error';
 }
 
 export async function sendMail({ to, subject, text, html }) {

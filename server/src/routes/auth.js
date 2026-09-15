@@ -21,7 +21,7 @@ import {
 } from '../services/codes.js';
 import { passwordResetEmail, verificationEmail } from '../services/emailTemplates.js';
 import { countIncomingRequests } from '../services/friends.js';
-import { sendMail } from '../services/mailer.js';
+import { mailErrorSummary, sendMail } from '../services/mailer.js';
 import { hashPassword, verifyPassword } from '../services/passwords.js';
 import { clearSessionCookie, signIn, signPurposeToken, verifyPurposeToken } from '../services/tokens.js';
 import { usernameTaken } from '../services/usernames.js';
@@ -46,7 +46,7 @@ async function sendOrFail(message) {
   try {
     await sendMail(message);
   } catch (err) {
-    console.error('Email failed:', err.message);
+    console.error('Email failed:', mailErrorSummary(err));
     throw new HttpError(502, "We couldn't send the email. Try again in a moment.");
   }
 }
@@ -224,13 +224,17 @@ authRouter.post(
 
 // ---- Sign in ----
 
+const loginKey = (req) => String(req.body?.login ?? '').trim().toLowerCase();
+
 authRouter.post(
   '/signin',
+  // Per account, whatever the IP: slows password spraying from many addresses.
+  limiter({ windowMs: 60 * MINUTE, limit: 30, skipSuccessfulRequests: true, keyGenerator: (req) => `login:${loginKey(req)}` }),
   limiter({
     windowMs: 15 * MINUTE,
     limit: 10,
     skipSuccessfulRequests: true,
-    keyGenerator: (req) => `${ipKeyGenerator(req.ip ?? '')}:${String(req.body?.login ?? '').trim().toLowerCase()}`,
+    keyGenerator: (req) => `${ipKeyGenerator(req.ip ?? '')}:${loginKey(req)}`,
   }),
   validate({
     body: z.object({
@@ -266,7 +270,7 @@ authRouter.post(
       try {
         await sendMail({ to: pending.email, ...verificationEmail({ username: pending.username, code: newCode }) });
       } catch (err) {
-        console.error('Email failed:', err.message);
+        console.error('Email failed:', mailErrorSummary(err));
         await PendingSignup.updateOne({ _id: pending._id }, { $set: { lastSentAt: new Date(0) } });
       }
     }
@@ -399,7 +403,7 @@ authRouter.post(
         );
         // Not awaited, so the response time doesn't reveal whether the account exists.
         sendMail({ to: user.email, ...passwordResetEmail({ code: newCode }) }).catch((err) =>
-          console.error('Reset email failed:', err.message)
+          console.error('Reset email failed:', mailErrorSummary(err))
         );
       }
     }

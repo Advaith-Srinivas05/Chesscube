@@ -58,6 +58,8 @@ function register(session, { goneSince = null } = {}) {
     spectators: new Map(), // socket id -> identity id
     goneSince: { white: goneSince, black: goneSince },
     persist: Promise.resolve(),
+    moveWriteQueued: false,
+    lastMove: null,
     rematchId: null,
   };
   games.set(session.id, entry);
@@ -93,9 +95,16 @@ function handleEvents(entry, events) {
     if (type === 'move') {
       emit(room, 'game:move', { id: session.id, ...data, serverNow: Date.now() });
       if (session.population === 'users') {
-        const moves = session.moves.join(' ');
-        const clock = { w: data.clock.white, b: data.clock.black };
-        queueWrite(entry, () => Game.updateOne({ _id: session.id }, { $set: { moves, clock, turnStartedAt: new Date(data.turnStartedAt) } }));
+        entry.lastMove = { clock: { w: data.clock.white, b: data.clock.black }, turnStartedAt: new Date(data.turnStartedAt) };
+        // Every write stores the whole move list, so one queued write that reads the latest state when it runs covers
+        // any moves made while earlier writes are in flight. This keeps a crash from losing more than one round trip.
+        if (!entry.moveWriteQueued) {
+          entry.moveWriteQueued = true;
+          queueWrite(entry, () => {
+            entry.moveWriteQueued = false;
+            return Game.updateOne({ _id: session.id }, { $set: { moves: session.moves.join(' '), ...entry.lastMove } });
+          });
+        }
       }
     } else if (type === 'end') {
       finished = finishGame(entry, data).catch((err) => console.error(`Finishing game ${session.id} failed:`, err));

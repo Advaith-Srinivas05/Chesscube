@@ -37,6 +37,7 @@ export function errorHandler(err, req, res, next) {
   if (err.type === 'entity.too.large') {
     return res.status(413).json({ message: 'Request body too large' });
   }
-  console.error(err);
+  // The path without its query string, which can hold an email address.
+  console.error(`${req.method} ${req.baseUrl}${req.path} failed:`, err);
   res.status(500).json({ message: 'Internal server error' });
 }

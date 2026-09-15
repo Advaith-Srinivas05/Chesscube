@@ -1,26 +1,29 @@
+import { lazy } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import GuestOnly from './components/GuestOnly.jsx';
 import Layout from './components/Layout.jsx';
 import RequireAuth from './components/RequireAuth.jsx';
-import Analysis from './pages/Analysis.jsx';
-import ChooseUsername from './pages/ChooseUsername.jsx';
-import DailyPuzzle from './pages/DailyPuzzle.jsx';
-import Game from './pages/Game.jsx';
-import ForgotPassword from './pages/ForgotPassword.jsx';
 import Home from './pages/Home.jsx';
-import Leaderboard from './pages/Leaderboard.jsx';
-import Learn from './pages/Learn.jsx';
-import Lesson from './pages/Lesson.jsx';
-import Play from './pages/Play.jsx';
-import PlayComputer from './pages/PlayComputer.jsx';
-import Profile from './pages/Profile.jsx';
-import Puzzles from './pages/Puzzles.jsx';
-import ResetPassword from './pages/ResetPassword.jsx';
-import Settings from './pages/Settings.jsx';
-import SignIn from './pages/SignIn.jsx';
-import SignUp from './pages/SignUp.jsx';
-import Socials from './pages/Socials.jsx';
-import VerifyEmail from './pages/VerifyEmail.jsx';
+
+// Home is in the main bundle (the landing page); every other page loads on first visit.
+const Analysis = lazy(() => import('./pages/Analysis.jsx'));
+const ChooseUsername = lazy(() => import('./pages/ChooseUsername.jsx'));
+const DailyPuzzle = lazy(() => import('./pages/DailyPuzzle.jsx'));
+const Game = lazy(() => import('./pages/Game.jsx'));
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword.jsx'));
+const Leaderboard = lazy(() => import('./pages/Leaderboard.jsx'));
+const Learn = lazy(() => import('./pages/Learn.jsx'));
+const Lesson = lazy(() => import('./pages/Lesson.jsx'));
+const Play = lazy(() => import('./pages/Play.jsx'));
+const PlayComputer = lazy(() => import('./pages/PlayComputer.jsx'));
+const Profile = lazy(() => import('./pages/Profile.jsx'));
+const Puzzles = lazy(() => import('./pages/Puzzles.jsx'));
+const ResetPassword = lazy(() => import('./pages/ResetPassword.jsx'));
+const Settings = lazy(() => import('./pages/Settings.jsx'));
+const SignIn = lazy(() => import('./pages/SignIn.jsx'));
+const SignUp = lazy(() => import('./pages/SignUp.jsx'));
+const Socials = lazy(() => import('./pages/Socials.jsx'));
+const VerifyEmail = lazy(() => import('./pages/VerifyEmail.jsx'));
 
 const guest = (page) => <GuestOnly>{page}</GuestOnly>;
 

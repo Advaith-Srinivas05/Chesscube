@@ -1,0 +1,13 @@
+/* Shown while a page's code downloads; fades in late so fast loads don't flash a spinner. */
+.loading {
+  display: grid;
+  place-items: center;
+  min-height: 50vh;
+  animation: appear 0.2s ease 0.3s both;
+}
+
+@keyframes appear {
+  from {
+    opacity: 0;
+  }
+}

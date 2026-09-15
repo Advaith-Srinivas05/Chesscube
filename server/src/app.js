@@ -1,6 +1,7 @@
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import express from 'express';
+import helmet from 'helmet';
 import { env } from './config/env.js';
 import { optionalAuth } from './middleware/auth.js';
 import { errorHandler, notFound } from './middleware/errors.js';
@@ -31,6 +32,7 @@ export function createApp() {
   // X-Forwarded-For. Someone calling the API host directly could spoof it; acceptable for rate limiting here.
   if (env.isProd) app.set('trust proxy', true);
 
+  app.use(helmet());
   app.use(cors({ origin: env.clientOrigins, credentials: true }));
   app.use(cookieParser());
   app.use(requireJson);
