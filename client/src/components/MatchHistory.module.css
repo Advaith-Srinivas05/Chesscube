@@ -223,3 +223,45 @@
     display: none;
   }
 }
+
+/* ---- compact (Home card): result | opponent | rating change | time control | date | analyse ---- */
+
+.list.compact {
+  grid-template-columns: auto minmax(0, 1fr) auto auto auto auto;
+  column-gap: 16px;
+}
+
+.compact .row {
+  padding-block: 7px;
+}
+
+.skeletonRow {
+  display: block;
+  pointer-events: none;
+}
+
+.skeleton {
+  display: block;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--surface-2);
+  animation: skeletonPulse 1.4s ease-in-out infinite;
+}
+
+@keyframes skeletonPulse {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.compactEmpty {
+  flex: 1;
+  justify-content: center;
+  padding: 16px;
+}
+
+@media (max-width: 767px) {
+  .list.compact {
+    display: flex;
+  }
+}

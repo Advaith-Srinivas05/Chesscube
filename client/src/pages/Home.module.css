@@ -1,19 +1,38 @@
+/* One grid: the board spans the first two card rows; Leaderboard (under the board) and Match history share the
+   last row, so their tops and bottoms line up. The board column is 12px wider than the board, and its items give
+   that back as a margin, making the board-to-cards gap 28px while cards stay 16px apart. */
 .home {
   display: grid;
-  grid-template-columns: minmax(0, 560px) minmax(0, 1fr);
-  gap: 28px;
-  align-items: stretch;
+  grid-template-columns: minmax(0, 572px) repeat(2, minmax(0, 1fr));
+  grid-template-rows: 1fr 1fr auto;
+  gap: 16px;
 }
 
 .board {
+  grid-column: 1;
+  grid-row: 1 / 3;
   align-self: start;
+  margin-inline-end: 12px;
 }
 
-.cards {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  grid-template-rows: 1fr 1fr 1.2fr;
-  gap: 16px;
+.leaderboard {
+  grid-column: 1;
+  grid-row: 3;
+  margin-inline-end: 12px;
+}
+
+.history {
+  grid-column: 2 / 4;
+  grid-row: 3;
+}
+
+.historyBody {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 10px;
+  min-height: calc(5 * var(--history-row));
+  --history-row: 47px;
 }
 
 .card {
@@ -34,10 +53,6 @@
   box-shadow: var(--shadow);
 }
 
-.wide {
-  grid-column: 1 / -1;
-}
-
 .welcome {
   background: linear-gradient(135deg, var(--accent-soft), transparent 70%), var(--surface);
 }
@@ -54,6 +69,102 @@
   margin: 0;
   color: var(--text-muted);
   font-size: 14px;
+}
+
+/* Match history and Leaderboard end with the same footer line, so the two cards match in height. */
+.cardFooter {
+  line-height: 22px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.cardFooter p {
+  margin: 0;
+}
+
+.viewAll {
+  color: var(--accent);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.viewAll:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.historyGuest {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  text-align: center;
+}
+
+.historyGuest p {
+  max-width: 44ch;
+}
+
+/* Welcome card: Blitz, Rapid and Puzzles ratings, linking to the profile. */
+.ratings {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: auto;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg);
+  color: var(--text);
+  transition: border-color 0.15s ease;
+}
+
+.ratings:hover {
+  border-color: var(--accent);
+}
+
+.rating {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 8px;
+}
+
+.rating + .rating {
+  border-left: 1px solid var(--border);
+}
+
+.ratingName {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.ratingName svg {
+  flex-shrink: 0;
+  color: var(--accent);
+}
+
+.ratingValue {
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 600;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
+.provisional {
+  color: var(--text-muted);
 }
 
 .cardAction {
@@ -73,23 +184,37 @@
 
 @media (max-width: 1023px) {
   .home {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: none;
   }
 
   .board {
+    grid-column: 1 / -1;
+    grid-row: auto;
     justify-self: center;
     width: 100%;
     max-width: 560px;
+    margin: 0 0 12px;
   }
 
-  .cards {
-    grid-template-rows: none;
+  .history,
+  .leaderboard {
+    grid-column: 1 / -1;
+    grid-row: auto;
+    margin: 0;
+  }
+}
+
+/* Match history rows take two lines here. */
+@media (max-width: 767px) {
+  .historyBody {
+    --history-row: 70px;
   }
 }
 
 @media (max-width: 559px) {
-  .cards {
-    grid-template-columns: 1fr;
+  .home {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .card {

@@ -139,6 +139,16 @@ export default function Play() {
     }
   }, [newGame, connected]);
 
+  // `?pair=5+3` (Home's quick tiles): start searching that preset once connected, then drop the param.
+  const pairId = params.get('pair');
+  useEffect(() => {
+    if (!pairId || !connected || identity === null) return;
+    setParams(tab === 'lobby' ? { tab: 'lobby' } : {}, { replace: true });
+    const preset = QUICK_PAIRINGS.find(({ id }) => id === pairId);
+    if (!preset || ownSeek?.presetId === preset.id) return;
+    if (ready()) quickPair(preset.id);
+  }, [pairId, connected, identity]);
+
   // Your own seek pinned on top, then newest first.
   const ownSeekId = ownSeek?.id ?? null;
   const own = (seek) => (seek.id === ownSeekId ? 1 : 0);

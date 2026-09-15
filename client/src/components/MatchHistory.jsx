@@ -11,6 +11,7 @@ import Spinner from './ui/Spinner.jsx';
 import styles from './MatchHistory.module.css';
 
 const PAGE_SIZE = 20;
+const COMPACT_SIZE = 5;
 const PILLS = { win: 'W', loss: 'L', draw: 'D' };
 const RESULT_WORDS = { win: 'Won', loss: 'Lost', draw: 'Drew' };
 const DAY = 24 * 60 * 60 * 1000;
@@ -32,7 +33,7 @@ export function formatPlayedAt(value, now = Date.now()) {
   return date.toLocaleDateString(undefined, { day: 'numeric', month: 'short', ...(sameYear ? {} : { year: 'numeric' }) });
 }
 
-function GameRow({ game }) {
+function GameRow({ game, compact }) {
   const name = game.opponent.username ?? 'Deleted user';
   const moves = Math.ceil(game.moves / 2);
   const diff = game.ratingDiff;
@@ -62,13 +63,17 @@ function GameRow({ game }) {
           <CategoryIcon category={game.category} size={16} />
           {formatTimeControl(game.tc)}
         </span>
-        <span className={styles.mode}>
-          {game.rated ? 'Rated' : 'Casual'}
-          {game.variant === 'chess960' && <span className={styles.tag}>Chess960</span>}
-        </span>
-        <span className={styles.moves}>
-          {moves} move{moves === 1 ? '' : 's'}
-        </span>
+        {!compact && (
+          <>
+            <span className={styles.mode}>
+              {game.rated ? 'Rated' : 'Casual'}
+              {game.variant === 'chess960' && <span className={styles.tag}>Chess960</span>}
+            </span>
+            <span className={styles.moves}>
+              {moves} move{moves === 1 ? '' : 's'}
+            </span>
+          </>
+        )}
         <time dateTime={game.endedAt} className={`${styles.date} ${styles.muted}`}>
           {formatPlayedAt(game.endedAt)}
         </time>
@@ -81,12 +86,13 @@ function GameRow({ game }) {
 }
 
 // Finished games for `username`, newest first, with "Load more".
-export default function MatchHistory({ username, isOwn = false }) {
+// `compact` (Home card): the last five games in fewer columns, without the card shell or Load more.
+export default function MatchHistory({ username, isOwn = false, compact = false }) {
   const [state, setState] = useState({ status: 'loading', games: [], nextBefore: null, loadingMore: false, error: null });
 
   const load = useCallback(
     async (before, signal) => {
-      const query = new URLSearchParams({ limit: String(PAGE_SIZE), ...(before ? { before } : {}) });
+      const query = new URLSearchParams({ limit: String(compact ? COMPACT_SIZE : PAGE_SIZE), ...(before ? { before } : {}) });
       const data = await api.get(`/users/${encodeURIComponent(username)}/games?${query}`, { signal });
       setState((current) => ({
         status: 'ready',
@@ -96,7 +102,7 @@ export default function MatchHistory({ username, isOwn = false }) {
         error: null,
       }));
     },
-    [username]
+    [username, compact]
   );
 
   useEffect(() => {
@@ -114,14 +120,25 @@ export default function MatchHistory({ username, isOwn = false }) {
   }
 
   let body;
-  if (state.status === 'loading') {
+  if (compact && state.status === 'loading') {
+    // Placeholder rows keep the card's height while loading.
+    body = (
+      <ul className={`${styles.list} ${styles.compact}`} aria-busy="true" aria-label="Loading games">
+        {Array.from({ length: COMPACT_SIZE }, (_, index) => (
+          <li key={index} className={`${styles.row} ${styles.skeletonRow}`}>
+            <span className={styles.skeleton} />
+          </li>
+        ))}
+      </ul>
+    );
+  } else if (state.status === 'loading') {
     body = (
       <div className={styles.loading}>
         <Spinner label="Loading games" />
       </div>
     );
   } else if (state.status === 'error') {
-    body = <EmptyState title="Couldn't load games" text={state.error} />;
+    body = <EmptyState title="Couldn't load games" text={state.error} className={compact ? styles.compactEmpty : ''} />;
   } else if (state.games.length === 0) {
     body = (
       <EmptyState
@@ -131,11 +148,12 @@ export default function MatchHistory({ username, isOwn = false }) {
             <path d="M8 8.5h8M8 12h8M8 15.5h5" />
           </svg>
         }
-        title="No games yet"
-        text={isOwn ? 'Your finished games will show up here.' : `${username} hasn't finished any games yet.`}
+        title={compact ? 'Your games will show up here' : 'No games yet'}
+        text={compact ? null : isOwn ? 'Your finished games will show up here.' : `${username} hasn't finished any games yet.`}
+        className={compact ? styles.compactEmpty : ''}
         action={
           isOwn && (
-            <Button as={Link} to="/play">
+            <Button as={Link} to="/play" size={compact ? 'sm' : 'md'}>
               Play a game
             </Button>
           )
@@ -145,13 +163,13 @@ export default function MatchHistory({ username, isOwn = false }) {
   } else {
     body = (
       <>
-        <ul className={styles.list}>
+        <ul className={`${styles.list} ${compact ? styles.compact : ''}`}>
           {state.games.map((game) => (
-            <GameRow key={game.id} game={game} />
+            <GameRow key={game.id} game={game} compact={compact} />
           ))}
         </ul>
         {state.error && <p className={styles.error}>{state.error}</p>}
-        {state.nextBefore && (
+        {!compact && state.nextBefore && (
           <div className={styles.more}>
             <Button variant="secondary" onClick={loadMore} loading={state.loadingMore}>
               Load more
@@ -161,6 +179,8 @@ export default function MatchHistory({ username, isOwn = false }) {
       </>
     );
   }
+
+  if (compact) return body;
 
   return (
     <section className={card.card} aria-labelledby="history-title">

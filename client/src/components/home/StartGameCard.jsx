@@ -1,7 +1,14 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { categoryFor, CATEGORIES, QUICK_PAIRINGS } from '../../shared/gameModes.js';
 import ComputerGameDialog from '../play/ComputerGameDialog.jsx';
 import styles from './HomeCards.module.css';
+
+// Play starts searching for `?pair=<presetId>` on arrival.
+const TILES = ['1+0', '3+2', '10+0'].map((id) => {
+  const preset = QUICK_PAIRINGS.find((entry) => entry.id === id);
+  return { id, category: CATEGORIES.find((entry) => entry.id === categoryFor(preset)).name };
+});
 
 const ICON_PROPS = {
   viewBox: '0 0 24 24',
@@ -47,14 +54,22 @@ export default function StartGameCard() {
   return (
     <>
       <h2 className={styles.title}>Start a game</h2>
+      <div className={styles.tiles}>
+        {TILES.map(({ id, category }) => (
+          <Link key={id} to={`/play?pair=${encodeURIComponent(id)}`} className={styles.tile} aria-label={`Play ${id} ${category}`}>
+            <span className={styles.tileTime}>{id}</span>
+            <span className={styles.tileCategory}>{category}</span>
+          </Link>
+        ))}
+      </div>
       <div className={styles.links}>
         <Link to="/play" className={styles.linkRow}>
           <span className={styles.linkIcon}>
             <OnlineIcon />
           </span>
           <span className={styles.linkText}>
-            Play online
-            <span className={styles.linkHint}>Pairing or lobby</span>
+            More time controls
+            <span className={styles.linkHint}>Lobby or custom</span>
           </span>
           <Arrow />
         </Link>
@@ -63,7 +78,7 @@ export default function StartGameCard() {
             <ComputerIcon />
           </span>
           <span className={styles.linkText}>
-            Vs computer
+            Play the computer
             <span className={styles.linkHint}>Stockfish, 8 levels</span>
           </span>
           <Arrow />

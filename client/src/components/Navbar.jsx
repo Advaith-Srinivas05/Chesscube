@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useSettings } from '../context/SettingsContext.jsx';
@@ -7,6 +7,7 @@ import ProfileMenu from './ProfileMenu.jsx';
 import styles from './Navbar.module.css';
 
 const LINKS = [
+  { to: '/', label: 'Home' },
   { to: '/play', label: 'Play' },
   { to: '/puzzles', label: 'Puzzles' },
   { to: '/learn', label: 'Learn' },
@@ -44,27 +45,80 @@ function GearIcon() {
   );
 }
 
+// One underline for the desktop links that slides to the active link (Web Animations, so a re-measure during the
+// slide, e.g. the scrollbar appearing on the new page, only moves its end point). First render and resizes jump;
+// pages without a nav link (Settings, Profile, ...) fade it out.
+const SLIDE = { duration: 300, easing: 'cubic-bezier(0.4, 0, 0.2, 1)' };
+
+function useUnderline(linksRef, underlineRef, pathname, deps) {
+  const last = useRef(null); // { link, frame }
+
+  useLayoutEffect(() => {
+    const container = linksRef.current;
+    const line = underlineRef.current;
+    if (!container || !line) return undefined;
+
+    function place(fromNavigation) {
+      const active = container.querySelector('[aria-current="page"]');
+      if (!active) {
+        last.current = null;
+        line.style.opacity = '0';
+        return;
+      }
+      const frame = {
+        transform: `translate(${active.offsetLeft}px, ${active.offsetTop + active.offsetHeight}px)`,
+        width: `${active.offsetWidth}px`,
+      };
+      const previous = last.current;
+      last.current = { link: active, frame };
+      Object.assign(line.style, frame, { opacity: '1' });
+
+      const running = line.getAnimations().find((animation) => animation.id === 'slide');
+      if (running && !fromNavigation) {
+        running.effect.setKeyframes([running.effect.getKeyframes()[0], frame]);
+        return;
+      }
+      const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (fromNavigation && previous && previous.link !== active && !reduced) {
+        running?.cancel();
+        const slide = line.animate([previous.frame, frame], SLIDE);
+        slide.id = 'slide';
+      }
+    }
+
+    place(true);
+    const observer = new ResizeObserver(() => place(false));
+    observer.observe(container);
+    document.fonts?.ready.then(() => place(false));
+    return () => observer.disconnect();
+  }, [pathname, ...deps]);
+}
+
 export default function Navbar() {
   const { resolvedTheme, updateSettings } = useSettings();
   const { user, status } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
+  const linksRef = useRef(null);
+  const underlineRef = useRef(null);
 
   useEffect(() => setMenuOpen(false), [location.pathname]);
 
   const isDark = resolvedTheme === 'dark';
   const requests = user?.incomingRequests ?? 0;
+  useUnderline(linksRef, underlineRef, location.pathname, [requests > 0]);
 
   return (
     <header className={styles.header}>
       <nav className={styles.nav}>
-        <Link to="/" className={styles.brand} aria-label="Home">
+        <Link to="/" className={styles.brand} aria-label="Chesscube home">
           <Logo />
         </Link>
 
-        <div className={`${styles.links} ${menuOpen ? styles.linksOpen : ''}`}>
+        <div ref={linksRef} className={`${styles.links} ${menuOpen ? styles.linksOpen : ''}`}>
+          <span ref={underlineRef} className={styles.underline} aria-hidden="true" />
           {LINKS.map(({ to, label }) => (
-            <NavLink key={to} to={to} className={linkClass}>
+            <NavLink key={to} to={to} end={to === '/'} className={linkClass}>
               {label}
               {to === '/socials' && requests > 0 && (
                 <>

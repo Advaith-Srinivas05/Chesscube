@@ -25,10 +25,29 @@
 }
 
 .links {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 4px;
   flex: 1;
+}
+
+/* Desktop: a single underline that slides between links (positioned by Navbar.jsx). The phone menu uses
+   the per-link bar from .active::after instead. */
+.underline {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 2px;
+  margin-top: 11px;
+  opacity: 0;
+  border-radius: 2px;
+  background: var(--accent);
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  /* Inset like the old per-link underline. */
+  clip-path: inset(0 12px round 2px);
 }
 
 .link {
@@ -51,7 +70,7 @@
 }
 
 .active::after {
-  content: '';
+  content: none;
   position: absolute;
   left: 12px;
   right: 12px;
@@ -183,7 +202,12 @@
     padding: 12px;
   }
 
+  .underline {
+    display: none;
+  }
+
   .active::after {
+    content: '';
     left: 0;
     right: auto;
     top: 10px;
@@ -196,5 +220,25 @@
 @media (max-width: 399px) {
   .signIn {
     padding: 8px 12px;
+  }
+}
+
+/* Tablets: tighter spacing so all six links and the actions fit before the hamburger takes over. */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .nav {
+    gap: 16px;
+    padding: 0 16px;
+  }
+
+  .links {
+    gap: 0;
+  }
+
+  .link {
+    padding: 8px 9px;
+  }
+
+  .underline {
+    clip-path: inset(0 9px round 2px);
   }
 }
