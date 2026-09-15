@@ -28,7 +28,7 @@ function requireJson(req, res, next) {
 export function createApp() {
   const app = express();
 
-  // In production requests arrive through Vercel's rewrite and Koyeb's edge, so req.ip comes from
+  // In production requests arrive through Vercel's rewrite and the host's proxy, so req.ip comes from
   // X-Forwarded-For. Someone calling the API host directly could spoof it; acceptable for rate limiting here.
   if (env.isProd) app.set('trust proxy', true);
 

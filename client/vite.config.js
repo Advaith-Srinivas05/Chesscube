@@ -7,8 +7,8 @@ import react from '@vitejs/plugin-react';
 function checkVercelDeploy(mode) {
   if (!process.env.VERCEL) return;
   const problems = [];
-  if (readFileSync(new URL('./vercel.json', import.meta.url), 'utf8').includes('YOUR-KOYEB-APP')) {
-    problems.push('client/vercel.json still has the YOUR-KOYEB-APP placeholder in its /api rewrite');
+  if (readFileSync(new URL('./vercel.json', import.meta.url), 'utf8').includes('YOUR-RENDER-APP')) {
+    problems.push('client/vercel.json still has the YOUR-RENDER-APP placeholder in its /api rewrite');
   }
   const apiUrl = loadEnv(mode, process.cwd(), 'VITE_').VITE_API_URL;
   if (!apiUrl || !apiUrl.startsWith('https://') || apiUrl.endsWith('/')) {

@@ -14,13 +14,28 @@ if (Buffer.byteLength(jwtSecret) < JWT_SECRET_MIN_BYTES) {
 }
 const isProd = nodeEnv === 'production';
 
+// Email goes out through one of two Gmail routes:
+// - the Gmail API over HTTPS (production: free hosts such as Render block the SMTP ports), or
+// - SMTP with an app password (handy locally).
+// With neither, emails are logged to the console, which is only acceptable in development.
+const GMAIL_API_VARS = ['GMAIL_USER', 'GMAIL_CLIENT_ID', 'GMAIL_CLIENT_SECRET', 'GMAIL_REFRESH_TOKEN'];
+const gmailValues = GMAIL_API_VARS.map((name) => process.env[name]?.trim() || null);
+const gmailSet = gmailValues.filter(Boolean).length;
+if (gmailSet > 0 && gmailSet < GMAIL_API_VARS.length) {
+  const missing = GMAIL_API_VARS.filter((_, index) => !gmailValues[index]);
+  throw new Error(`Gmail API email is partly configured; also set ${missing.join(', ')}`);
+}
+const gmailApi = gmailSet
+  ? { user: gmailValues[0], clientId: gmailValues[1], clientSecret: gmailValues[2], refreshToken: gmailValues[3] }
+  : null;
+
 const smtpUser = process.env.SMTP_USER?.trim() || null;
 // Google shows app passwords in groups of four; the spaces aren't part of it.
 const smtpPass = process.env.SMTP_PASS?.replace(/\s+/g, '') || null;
+const smtp = smtpUser && smtpPass ? { user: smtpUser, pass: smtpPass } : null;
 
-// Without SMTP credentials emails are logged to the console, which is only acceptable in development.
-if (isProd && (!smtpUser || !smtpPass)) {
-  throw new Error('SMTP_USER and SMTP_PASS are required when NODE_ENV=production');
+if (isProd && !gmailApi && !smtp) {
+  throw new Error('Email is required in production: set GMAIL_USER, GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET and GMAIL_REFRESH_TOKEN (or SMTP_USER and SMTP_PASS)');
 }
 
 export const env = {
@@ -30,8 +45,8 @@ export const env = {
   mongoUri: required('MONGODB_URI'),
   jwtSecret,
   googleClientId: process.env.GOOGLE_CLIENT_ID || null,
-  smtpUser,
-  smtpPass,
+  gmailApi,
+  smtp,
   clientOrigins: (process.env.CLIENT_ORIGIN ?? 'http://localhost:3000')
     .split(',')
     .map((origin) => origin.trim())

@@ -9,7 +9,8 @@
     "start": "node src/index.js",
     "test": "node --test",
     "import:puzzles": "node --env-file-if-exists=.env scripts/importPuzzles.js",
-    "storage": "node --env-file-if-exists=.env scripts/storageReport.js"
+    "storage": "node --env-file-if-exists=.env scripts/storageReport.js",
+    "gmail:auth": "node --env-file-if-exists=.env scripts/gmailAuth.js"
   },
   "engines": {
     "node": ">=22"

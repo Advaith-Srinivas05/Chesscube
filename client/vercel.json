@@ -1,6 +1,6 @@
 {
   "rewrites": [
-    { "source": "/api/:path*", "destination": "https://YOUR-KOYEB-APP.koyeb.app/api/:path*" },
+    { "source": "/api/:path*", "destination": "https://chesscube-d02u.onrender.com/api/:path*" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
