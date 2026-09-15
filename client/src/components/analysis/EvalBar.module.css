@@ -1,0 +1,95 @@
+/* Fixed greys: the bar shows the two sides, not the site theme. */
+.bar {
+  position: relative;
+  width: 22px;
+  height: 100%;
+  border-radius: 4px;
+  background: #3b3935;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.white {
+  position: absolute;
+  inset: auto 0 0;
+  height: var(--share);
+  background: #f4f1ea;
+  transition: height 0.4s ease, width 0.4s ease;
+}
+
+.flipped .white {
+  inset: 0 0 auto;
+}
+
+.label {
+  position: absolute;
+  left: 50%;
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+
+/* The label sits at the end of the side that is ahead. */
+.onWhite {
+  bottom: 4px;
+  color: #3b3935;
+}
+
+.onBlack {
+  top: 4px;
+  color: #f4f1ea;
+}
+
+.flipped .onWhite {
+  top: 4px;
+  bottom: auto;
+}
+
+.flipped .onBlack {
+  top: auto;
+  bottom: 4px;
+}
+
+@media (max-width: 639px) {
+  .bar {
+    width: 100%;
+    height: 18px;
+  }
+
+  .white,
+  .flipped .white {
+    inset: 0 auto 0 0;
+    width: var(--share);
+    height: auto;
+  }
+
+  .flipped .white {
+    inset: 0 0 0 auto;
+  }
+
+  .label {
+    top: 50%;
+    bottom: auto;
+    left: auto;
+    font-size: 11px;
+    transform: translateY(-50%);
+  }
+
+  .onWhite,
+  .flipped .onBlack {
+    left: 6px;
+    right: auto;
+    top: 50%;
+    bottom: auto;
+  }
+
+  .onBlack,
+  .flipped .onWhite {
+    left: auto;
+    right: 6px;
+    top: 50%;
+    bottom: auto;
+  }
+}

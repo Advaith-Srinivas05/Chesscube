@@ -44,6 +44,7 @@ function piecesFromFen(fen) {
  * applies moves from `onMove`. Premoves are enabled by passing `onPremove`.
  * `showDests` and `autoQueen` default to the player's settings.
  * `highlights` tints squares for feedback: { e4: 'good' | 'bad' }.
+ * `arrows` are drawn by the parent ([{ startSquare, endSquare, color }]), on top of the player's own arrows.
  */
 export default function InteractiveBoard({
   id = 'board',
@@ -63,6 +64,7 @@ export default function InteractiveBoard({
   onCancelPremove,
   variant = 'standard',
   highlights = null,
+  arrows,
 }) {
   const { settings } = useSettings();
   const { options: appearance, pieceSet } = useBoardAppearance();
@@ -210,6 +212,7 @@ export default function InteractiveBoard({
           onSquareRightClick: handleRightClick,
           dropSquareStyle: { boxShadow: 'inset 0 0 0 3px rgba(255, 255, 255, 0.55)' },
           allowDrawingArrows: true,
+          ...(arrows ? { arrows } : {}),
           clearArrowsOnPositionChange: true,
           animationDurationInMs: 200,
         }}

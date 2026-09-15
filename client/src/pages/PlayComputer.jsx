@@ -124,6 +124,21 @@ function ComputerGame({ engine, config, onPlayAgain, onNewGame }) {
                 <Button variant="secondary" onClick={onNewGame}>
                   New game
                 </Button>
+                {game.moves.length > 0 && (
+                  <Button
+                    as={Link}
+                    variant="secondary"
+                    to="/learn/analysis"
+                    state={{
+                      variant: config.variant,
+                      initialFen: game.startFen,
+                      moves: game.moves.map((played) => played.uci),
+                      orientation,
+                    }}
+                  >
+                    Analyse
+                  </Button>
+                )}
               </>
             }
           />

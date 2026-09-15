@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import GuestOnly from './components/GuestOnly.jsx';
 import Layout from './components/Layout.jsx';
 import RequireAuth from './components/RequireAuth.jsx';
+import Analysis from './pages/Analysis.jsx';
 import ChooseUsername from './pages/ChooseUsername.jsx';
 import DailyPuzzle from './pages/DailyPuzzle.jsx';
 import ForgotPassword from './pages/ForgotPassword.jsx';
@@ -31,6 +32,7 @@ export default function App() {
         <Route path="puzzles" element={<Puzzles />} />
         <Route path="puzzles/daily" element={<RequireAuth><DailyPuzzle /></RequireAuth>} />
         <Route path="learn" element={<Learn />} />
+        <Route path="learn/analysis/:gameId?" element={<Analysis />} />
         <Route path="leaderboard/:category?" element={<Leaderboard />} />
         <Route path="socials" element={<Socials />} />
         <Route path="signin" element={guest(<SignIn />)} />

@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import styles from './MoveList.module.css';
 
-const NAV = [
+export const NAV = [
   { key: 'first', label: 'First move', path: 'M6 5v14M18 5l-8 7 8 7z' },
   { key: 'prev', label: 'Previous move', path: 'M16 5l-8 7 8 7z' },
   { key: 'next', label: 'Next move', path: 'M8 5l8 7-8 7z' },
