@@ -1,11 +1,15 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import Avatar from '../Avatar.jsx';
+import ChallengeFriendDialog from '../play/ChallengeFriendDialog.jsx';
 import Button from '../ui/Button.jsx';
 import Dialog from '../ui/Dialog.jsx';
 import EmptyState from '../ui/EmptyState.jsx';
 import Menu from '../ui/Menu.jsx';
+import PresenceAvatar from './PresenceAvatar.jsx';
 import styles from './Social.module.css';
+
+// In a game, then online, then offline; alphabetical within each group.
+const presenceRank = (friend) => (friend.gameId ? 0 : friend.online ? 1 : 2);
 
 export const shortDate = (date) =>
   new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -52,11 +56,16 @@ export function RemoveFriendDialog({ username, open, onClose, onConfirm }) {
 
 export default function FriendList({ friends, onRemove }) {
   const [removing, setRemoving] = useState(null);
+  const [challenging, setChallenging] = useState(null);
+  const [challengeOpen, setChallengeOpen] = useState(false);
+  const sorted = [...friends].sort((a, b) => presenceRank(a) - presenceRank(b));
+  const online = friends.filter((friend) => friend.online).length;
 
   return (
     <section className={styles.panel} aria-labelledby="friends-title">
       <h2 id="friends-title" className={styles.heading}>
         Friends <span className={styles.count}>{friends.length}</span>
+        {online > 0 && <span className={styles.onlineCount}>{online} online</span>}
       </h2>
 
       {friends.length === 0 ? (
@@ -67,20 +76,37 @@ export default function FriendList({ friends, onRemove }) {
         />
       ) : (
         <ul className={styles.list}>
-          {friends.map((friend) => {
+          {sorted.map((friend) => {
             const { username, avatar } = friend.user;
+            const status = friend.gameId ? 'Playing a game' : friend.online ? 'Online' : `Friends since ${shortDate(friend.since)}`;
             return (
               <li key={username} className={styles.row}>
-                {/* A presence dot (online / playing) joins the avatar later. */}
-                <Avatar id={avatar} size={40} />
+                <PresenceAvatar id={avatar} size={40} online={friend.online} gameId={friend.gameId} />
                 <div className={styles.who}>
                   <Link to={`/u/${username}`} className={styles.name}>
                     {username}
                   </Link>
-                  <span className={styles.meta}>Friends since {shortDate(friend.since)}</span>
+                  <span className={`${styles.meta} ${friend.online || friend.gameId ? styles.live : ''}`}>{status}</span>
                 </div>
                 <div className={styles.actions}>
-                  {/* Watch and Challenge buttons go here once online play exists. */}
+                  {friend.gameId ? (
+                    <Button as={Link} to={`/game/${friend.gameId}`} size="sm" variant="secondary">
+                      Watch
+                    </Button>
+                  ) : (
+                    friend.online && (
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => {
+                          setChallenging(username);
+                          setChallengeOpen(true);
+                        }}
+                      >
+                        Challenge
+                      </Button>
+                    )
+                  )}
                   <Menu
                     label={`Options for ${username}`}
                     triggerClassName={styles.iconButton}
@@ -104,6 +130,7 @@ export default function FriendList({ friends, onRemove }) {
         onClose={() => setRemoving(null)}
         onConfirm={() => onRemove(removing)}
       />
+      <ChallengeFriendDialog open={challengeOpen} onClose={() => setChallengeOpen(false)} initialFriend={challenging} />
     </section>
   );
 }

@@ -36,6 +36,36 @@
   font-size: 14px;
 }
 
+.chip,
+.watchers {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.chip {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.watchers {
+  color: var(--text-muted);
+}
+
+.eye {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 .prompts {
   display: flex;
   flex-direction: column;

@@ -5,6 +5,7 @@ export const GONE_GRACE_MS = 5000;
 let io = null;
 const socketsByIdentity = new Map(); // identity id -> Set of socket ids
 const goneListeners = [];
+const onlineListeners = [];
 
 export function setIo(server) {
   io = server;
@@ -31,10 +32,22 @@ export function onIdentityGone(fn) {
   goneListeners.push(fn);
 }
 
+// fn(identity) runs when an identity opens its first socket (again after being fully disconnected).
+export function onIdentityOnline(fn) {
+  onlineListeners.push(fn);
+}
+
+export function emitToUser(userId, event, data) {
+  io?.to(identityRoom(String(userId))).emit(event, data);
+}
+
 export function trackSocket(socket) {
-  const { id } = socket.data.identity;
-  if (!socketsByIdentity.has(id)) socketsByIdentity.set(id, new Set());
+  const { identity } = socket.data;
+  const { id } = identity;
+  const first = !socketsByIdentity.has(id);
+  if (first) socketsByIdentity.set(id, new Set());
   socketsByIdentity.get(id).add(socket.id);
+  if (first) for (const listener of onlineListeners) listener(identity);
 
   socket.on('disconnect', () => {
     const sockets = socketsByIdentity.get(id);

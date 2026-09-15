@@ -2,7 +2,8 @@ import { EmailCode } from '../models/EmailCode.js';
 import { Friendship } from '../models/Friendship.js';
 import { Game } from '../models/Game.js';
 import { User } from '../models/User.js';
-import { disconnectUser } from '../realtime/connections.js';
+import { dropChallengesOf } from '../realtime/challenges.js';
+import { disconnectUser, emitToUser } from '../realtime/connections.js';
 import { endGameOf } from '../realtime/games.js';
 
 // Removes everything that belongs only to this user. Later features add their own clean-up here.
@@ -11,10 +12,19 @@ export async function deleteAccount(userId) {
   const id = String(userId);
   // A live game ends as a resignation (or abort) before the account disappears, so the opponent is rated normally.
   await endGameOf(id);
+  dropChallengesOf([id]);
   disconnectUser(id);
 
   await EmailCode.deleteMany({ userId });
+  // Friends and pending requests disappear from the other players' lists straight away.
+  const [friendships, self] = await Promise.all([
+    Friendship.find({ $or: [{ from: userId }, { to: userId }] }).select('from to').lean(),
+    User.findById(userId).select('username').lean(),
+  ]);
   await Friendship.deleteMany({ $or: [{ from: userId }, { to: userId }] });
+  for (const { from, to } of friendships) {
+    emitToUser(String(from) === id ? to : from, 'friends:removed', { username: self?.username });
+  }
 
   // Finished games stay for the other player ("Deleted user"), unless that player is gone too.
   const games = await Game.find({ players: userId }).select('players').lean();

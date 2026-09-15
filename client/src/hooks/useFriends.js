@@ -2,13 +2,21 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useToast } from '../components/ui/Toast.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import { friendsApi } from '../lib/friends.js';
+import useSocketEvent from './useSocketEvent.js';
 
 const byUsername = (a, b) => a.user.username.localeCompare(b.user.username, 'en', { sensitivity: 'base' });
 const without = (list, username) => list.filter((entry) => entry.user.username !== username);
 const sameName = (a, b) => a.toLowerCase() === b.toLowerCase();
 
+// Adds or replaces a friend entry, keeping presence ({ online, gameId }) the list already knows.
+function withFriend(friends, friend) {
+  const existing = friends.find((entry) => sameName(entry.user.username, friend.user.username));
+  return [...without(friends, friend.user.username), { ...existing, ...friend }].sort(byUsername);
+}
+
 // Friends and requests for the Socials page. Every action updates the lists at once, then rolls back
 // (or reloads, when the server says the lists are out of date) and shows a toast if the request fails.
+// Changes made elsewhere (the other player, another tab) and friends' presence arrive over the socket.
 export function useFriends() {
   const { user, refresh } = useAuth();
   const toast = useToast();
@@ -39,6 +47,31 @@ export function useFriends() {
   }, [load, attempt]);
 
   const update = (change) => setLists((current) => current && change(current));
+
+  useSocketEvent('friends:request', ({ direction, request }) =>
+    update((current) => ({ ...current, [direction]: [request, ...without(current[direction], request.user.username)] }))
+  );
+  useSocketEvent('friends:accepted', ({ friend }) =>
+    update((current) => ({
+      friends: withFriend(current.friends, friend),
+      incoming: without(current.incoming, friend.user.username),
+      outgoing: without(current.outgoing, friend.user.username),
+    }))
+  );
+  useSocketEvent('friends:removed', ({ username }) => {
+    if (!username) return;
+    update((current) => ({
+      friends: without(current.friends, username),
+      incoming: without(current.incoming, username),
+      outgoing: without(current.outgoing, username),
+    }));
+  });
+  useSocketEvent('presence:update', ({ username, online, gameId }) =>
+    update((current) => ({
+      ...current,
+      friends: current.friends.map((entry) => (sameName(entry.user.username, username) ? { ...entry, online, gameId } : entry)),
+    }))
+  );
 
   function setBusyName(username, value) {
     setBusy((current) => {
@@ -77,9 +110,7 @@ export function useFriends() {
 
   function becameFriends(other) {
     return (current) => ({
-      friends: [...without(current.friends, other.username), { user: other, since: new Date().toISOString() }].sort(
-        byUsername
-      ),
+      friends: withFriend(current.friends, { user: other, since: new Date().toISOString() }),
       incoming: without(current.incoming, other.username),
       outgoing: without(current.outgoing, other.username),
     });
@@ -96,7 +127,7 @@ export function useFriends() {
       }),
       request: () => friendsApi.accept(request.id),
       onSuccess: (data) => {
-        update((current) => ({ ...current, friends: [...without(current.friends, other.username), data.friend].sort(byUsername) }));
+        update((current) => ({ ...current, friends: withFriend(current.friends, data.friend) }));
         toast.show(`You're now friends with ${other.username}`, { tone: 'success' });
         refresh();
       },

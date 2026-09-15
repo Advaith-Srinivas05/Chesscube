@@ -1,0 +1,25 @@
+.wrap {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.dot {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 28%;
+  min-width: 10px;
+  max-width: 14px;
+  aspect-ratio: 1;
+  border: 2px solid var(--surface);
+  border-radius: 50%;
+}
+
+.online {
+  background: var(--success);
+}
+
+.playing {
+  background: var(--warning);
+}

@@ -15,16 +15,16 @@ const PILLS = { win: 'W', loss: 'L', draw: 'D' };
 const RESULT_WORDS = { win: 'Won', loss: 'Lost', draw: 'Drew' };
 const DAY = 24 * 60 * 60 * 1000;
 
-// "5 min ago" for the last week, a date after that.
+// "5m ago" for the last week, a date after that.
 export function formatPlayedAt(value, now = Date.now()) {
   const date = new Date(value);
   const elapsed = now - date.getTime();
   if (elapsed < 7 * DAY) {
     const minutes = Math.floor(elapsed / 60000);
     if (minutes < 1) return 'Just now';
-    if (minutes < 60) return `${minutes} min ago`;
+    if (minutes < 60) return `${minutes}m ago`;
     const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours} h ago`;
+    if (hours < 24) return `${hours}h ago`;
     const days = Math.floor(hours / 24);
     return days === 1 ? 'Yesterday' : `${days} days ago`;
   }
@@ -52,22 +52,24 @@ function GameRow({ game }) {
         <span className={styles.name}>{name}</span>
         {game.opponent.rating != null && <span className={styles.rating}>{game.opponent.rating}</span>}
       </span>
-      <span className={styles.mode}>
-        <CategoryIcon category={game.category} size={16} />
-        {formatTimeControl(game.tc)}
-        <span className={styles.muted}>· {game.rated ? 'Rated' : 'Casual'}</span>
-        {game.variant === 'chess960' && <span className={styles.tag}>Chess960</span>}
+      {/* Always rendered, so casual games leave this column empty instead of shifting the rest. */}
+      <span className={`${styles.diff} ${diff > 0 ? styles.gain : diff < 0 ? styles.drop : styles.muted}`}>
+        {diff == null ? '' : diff > 0 ? `+${diff}` : diff < 0 ? `−${Math.abs(diff)}` : '±0'}
       </span>
-      <span className={styles.details}>
-        <span>
+      {/* One grid cell per detail on wide screens; a wrapping second line on phones. */}
+      <span className={styles.meta}>
+        <span className={styles.time}>
+          <CategoryIcon category={game.category} size={16} />
+          {formatTimeControl(game.tc)}
+        </span>
+        <span className={styles.mode}>
+          {game.rated ? 'Rated' : 'Casual'}
+          {game.variant === 'chess960' && <span className={styles.tag}>Chess960</span>}
+        </span>
+        <span className={styles.moves}>
           {moves} move{moves === 1 ? '' : 's'}
         </span>
-        {diff != null && (
-          <span className={diff > 0 ? styles.gain : diff < 0 ? styles.drop : styles.muted}>
-            {diff > 0 ? `+${diff}` : diff < 0 ? `−${Math.abs(diff)}` : '±0'}
-          </span>
-        )}
-        <time dateTime={game.endedAt} className={styles.muted}>
+        <time dateTime={game.endedAt} className={`${styles.date} ${styles.muted}`}>
           {formatPlayedAt(game.endedAt)}
         </time>
       </span>

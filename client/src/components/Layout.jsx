@@ -1,5 +1,6 @@
 import { Outlet } from 'react-router-dom';
 import ConnectionBanner from './ConnectionBanner.jsx';
+import LiveSocial from './LiveSocial.jsx';
 import Navbar from './Navbar.jsx';
 
 export default function Layout() {
@@ -10,6 +11,7 @@ export default function Layout() {
       <main>
         <Outlet />
       </main>
+      <LiveSocial />
     </>
   );
 }

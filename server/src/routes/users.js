@@ -21,6 +21,7 @@ import {
   RESEND_COOLDOWN_MS,
 } from '../services/codes.js';
 import { emailChangeEmail } from '../services/emailTemplates.js';
+import { presenceOf } from '../realtime/presence.js';
 import { MINI_USER_FIELDS, miniUser, relationsWith, relationWith } from '../services/friends.js';
 import { sendMail } from '../services/mailer.js';
 import { hashPassword, verifyPassword } from '../services/passwords.js';
@@ -238,7 +239,9 @@ usersRouter.get('/:username', async (req, res) => {
   if (!user) throw new HttpError(404, 'Player not found');
   const viewer = req.user;
   const relation = viewer && !viewer._id.equals(user._id) ? await relationWith(viewer._id, user._id) : {};
-  res.json({ user: { ...user.toPublic(), ...relation } });
+  // Friends see whether the player is online and which game they're in.
+  const presence = relation.relation === 'friends' ? presenceOf(user._id) : {};
+  res.json({ user: { ...user.toPublic(), ...relation, ...presence } });
 });
 
 // Friends at a glance for a profile: the count and the most recent few.

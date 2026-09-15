@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { isProvisional } from '../lib/glicko2.js';
 import { randomChess960Fen } from '../lib/chess/chess960.js';
 import { GAME_ID_RE, gameId as newGameId } from '../lib/ids.js';
+import { Friendship, pairKey } from '../models/Friendship.js';
 import { Game } from '../models/Game.js';
 import { User } from '../models/User.js';
 import { applyGameResult } from '../services/ratings.js';
@@ -18,11 +19,12 @@ const KEEP_ENDED_MS = 2 * 60_000;
 
 /**
  * id -> { session, timer, dropTimer, sockets: { white: Set, black: Set }, goneSince: { white, black },
- *         persist: Promise (serialises this game's database writes), rematchId }
+ *         spectators: Map(socket id -> identity id), persist: Promise (serialises this game's database writes), rematchId }
  */
 const games = new Map();
 const activeByIdentity = new Map(); // identity id -> game id, for games still being played
 const startListeners = [];
+const endListeners = [];
 
 const gameRoom = (id) => `game:${id}`;
 const emit = (room, event, data) => getIo()?.to(room).emit(event, data);
@@ -42,12 +44,18 @@ export function onGameStart(fn) {
   startListeners.push(fn);
 }
 
+// fn([whiteId, blackId]) runs when a game ends (players are free again).
+export function onGameEnd(fn) {
+  endListeners.push(fn);
+}
+
 function register(session, { goneSince = null } = {}) {
   const entry = {
     session,
     timer: null,
     dropTimer: null,
     sockets: { white: new Set(), black: new Set() },
+    spectators: new Map(), // socket id -> identity id
     goneSince: { white: goneSince, black: goneSince },
     persist: Promise.resolve(),
     rematchId: null,
@@ -109,6 +117,7 @@ async function finishGame(entry, end) {
       emit(identityRoom(identityId), 'session:activeGame', { id: null });
     }
   }
+  for (const listener of endListeners) listener([session.white.id, session.black.id]);
 
   let ratingDiffs = null;
   try {
@@ -246,7 +255,28 @@ function snapshotOf(entry) {
     ...entry.session.snapshot(now),
     ratingDiffs: entry.session.ratingDiffs ?? null,
     gone: { white: claimAt('white'), black: claimAt('black') },
+    spectators: spectatorCount(entry),
   };
+}
+
+// Watchers counted per person, not per tab.
+const spectatorCount = (entry) => new Set(entry.spectators.values()).size;
+
+function broadcastSpectators(entry) {
+  emit(gameRoom(entry.session.id), 'game:spectators', { id: entry.session.id, count: spectatorCount(entry) });
+}
+
+// The colour a signed-in viewer watches: a friend's, or null when they're friends with neither player.
+async function friendColorFor(viewerId, session) {
+  if (session.population !== 'users') return null;
+  const friendships = await Friendship.find({
+    pair: { $in: [pairKey(viewerId, session.white.id), pairKey(viewerId, session.black.id)] },
+    status: 'accepted',
+  })
+    .select('pair')
+    .lean();
+  if (friendships.some((friendship) => friendship.pair === pairKey(viewerId, session.white.id))) return 'white';
+  return friendships.length ? 'black' : null;
 }
 
 // A colour whose last socket left the game: the opponent may claim after CLAIM_AFTER_MS.
@@ -255,6 +285,10 @@ function leaveGame(socket, id) {
   socket.data.gameIds.delete(id);
   const entry = games.get(id);
   if (!entry) return;
+  if (entry.spectators.delete(socket.id)) {
+    broadcastSpectators(entry);
+    return;
+  }
   const color = entry.session.colorOf(socket.data.identity.id);
   if (!color) return;
   const sockets = entry.sockets[color];
@@ -299,11 +333,22 @@ export function registerGameHandlers(socket) {
     return result;
   }
 
-  listen(socket, 'game:join', idSchema, ({ id }) => {
+  listen(socket, 'game:join', idSchema, async ({ id }) => {
     const entry = games.get(id);
     if (!entry) throw new EventError('Game not found', 'NOT_FOUND');
     const color = entry.session.colorOf(identity.id);
-    if (!color) throw new EventError('Only the players can open a live game for now', 'NOT_PLAYER');
+
+    // Friends of either player may watch. Spectators get every broadcast; player actions refuse them.
+    if (!color) {
+      const watching = identity.kind === 'user' ? await friendColorFor(identity.id, entry.session) : null;
+      if (!watching) throw new EventError('You can only watch games your friends are playing', 'NOT_PLAYER');
+      if (games.get(id) !== entry) throw new EventError('Game not found', 'NOT_FOUND');
+      socket.join(gameRoom(id));
+      socket.data.gameIds.add(id);
+      entry.spectators.set(socket.id, identity.id);
+      broadcastSpectators(entry);
+      return { snapshot: snapshotOf(entry), role: 'spectator', watching };
+    }
 
     socket.join(gameRoom(id));
     socket.data.gameIds.add(id);

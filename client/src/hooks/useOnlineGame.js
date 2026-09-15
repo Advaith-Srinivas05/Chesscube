@@ -32,7 +32,8 @@ function syncClocks(game, { clock, turnStartedAt, serverNow }) {
   game.syncedAt = performance.now();
 }
 
-function buildGame(snapshot, role) {
+// role: 'white' | 'black' | 'spectator'; `watching` is the colour a spectator's friend plays.
+function buildGame(snapshot, role, watching = null) {
   const startFen = snapshot.initialFen ?? INITIAL_FEN;
   const pos = positionFromFen(startFen);
   const moves = [];
@@ -49,6 +50,8 @@ function buildGame(snapshot, role) {
     category: snapshot.category,
     players: { white: snapshot.white, black: snapshot.black },
     role,
+    watching,
+    spectators: snapshot.spectators ?? 0,
     startFen,
     pos,
     moves, // [{ uci, san, fen }]
@@ -71,7 +74,7 @@ function buildGame(snapshot, role) {
 }
 
 /**
- * A live game on the server, for one of its players. state: 'loading' | 'live' | 'unavailable'
+ * A live game on the server, for one of its players or a spectator (a friend of a player). state: 'loading' | 'live' | 'unavailable'
  * (not in memory or not a player: the page falls back to the stored game). Own moves are applied
  * optimistically; a rejected move re-joins for a fresh snapshot.
  */
@@ -99,7 +102,7 @@ export default function useOnlineGame(id) {
       setState({ phase: 'unavailable', code: response.code ?? null, message: response.message });
       return;
     }
-    const game = buildGame(response.snapshot, response.role);
+    const game = buildGame(response.snapshot, response.role, response.watching);
     gameRef.current = game;
     setViewPly(game.moves.length);
     setState({ phase: 'live', code: null });
@@ -191,7 +194,7 @@ export default function useOnlineGame(id) {
     game.premove = null;
     game.firstMoveDeadline = null;
     bump();
-    if (data.ratingDiffs && user) refresh();
+    if (data.ratingDiffs && user && game.role !== 'spectator') refresh();
   });
 
   useSocketEvent('game:drawOffer', (data) => {
@@ -236,6 +239,13 @@ export default function useOnlineGame(id) {
     if (!game) return;
     game.rematchOffer = null;
     if (data.color === game.role) toast.show('Your rematch offer was declined');
+    bump();
+  });
+
+  useSocketEvent('game:spectators', (data) => {
+    const game = current(data);
+    if (!game) return;
+    game.spectators = data.count;
     bump();
   });
 
@@ -285,7 +295,7 @@ export default function useOnlineGame(id) {
       move: ({ from, to, promotion }) => sendMove(`${from}${to}${promotion ?? ''}`),
       setPremove: (premove) => {
         const g = gameRef.current;
-        if (!g || g.status !== 'playing' || g.pos.turn === g.role) return;
+        if (!g || g.role === 'spectator' || g.status !== 'playing' || g.pos.turn === g.role) return;
         g.premove = premove;
         bump();
       },
@@ -319,6 +329,9 @@ export default function useOnlineGame(id) {
     category: game.category,
     players: game.players,
     role: game.role,
+    isSpectator: game.role === 'spectator',
+    watching: game.watching,
+    spectators: game.spectators,
     startFen: game.startFen,
     moves: game.moves,
     fen: view.fen,

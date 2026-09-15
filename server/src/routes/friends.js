@@ -7,6 +7,7 @@ import { limiter } from '../middleware/rateLimit.js';
 import { validate } from '../middleware/validate.js';
 import { Friendship, pairKey } from '../models/Friendship.js';
 import { User } from '../models/User.js';
+import { friendRequestSent, friendshipAccepted, friendshipRemoved, presenceOf } from '../realtime/presence.js';
 import { MINI_USER_FIELDS, miniUser } from '../services/friends.js';
 
 const MAX_OUTGOING = 50;
@@ -52,7 +53,7 @@ friendsRouter.get('/', async (req, res) => {
     const isSender = friendship.from?._id.equals(me);
     const other = isSender ? friendship.to : friendship.from;
     if (!other) continue; // the other account was deleted mid-request
-    if (friendship.status === 'accepted') friends.push(friendEntry(friendship, other));
+    if (friendship.status === 'accepted') friends.push({ ...friendEntry(friendship, other), ...presenceOf(other._id) });
     else (isSender ? outgoing : incoming).push(requestEntry(friendship, other));
   }
 
@@ -79,6 +80,7 @@ friendsRouter.post(
     if (existing) {
       const accepted = await acceptRequest(existing._id, me._id);
       if (!accepted) throw new HttpError(409, 'That request changed, refresh and try again');
+      friendshipAccepted(me, target, accepted.acceptedAt);
       return res.json({ status: 'accepted', friend: friendEntry(accepted, target) });
     }
 
@@ -89,6 +91,7 @@ friendsRouter.post(
 
     // A simultaneous request for the same pair trips the unique index and becomes a 409.
     const friendship = await Friendship.create({ pair: pairKey(me._id, target._id), from: me._id, to: target._id });
+    friendRequestSent({ id: String(friendship._id), createdAt: friendship.createdAt }, me, target);
     res.status(201).json({ status: 'pending', request: requestEntry(friendship, target) });
   }
 );
@@ -100,14 +103,18 @@ const idParams = validate({
 friendsRouter.post('/requests/:id/accept', idParams, async (req, res) => {
   const accepted = await acceptRequest(req.params.id, req.user._id);
   if (!accepted?.from) throw new HttpError(404, 'Request not found');
+  friendshipAccepted(req.user, accepted.from, accepted.acceptedAt);
   res.json({ status: 'accepted', friend: friendEntry(accepted, accepted.from) });
 });
 
 // The recipient declines or the sender cancels.
 friendsRouter.delete('/requests/:id', idParams, async (req, res) => {
   const me = req.user._id;
-  const deleted = await Friendship.findOneAndDelete({ _id: req.params.id, status: 'pending', $or: [{ from: me }, { to: me }] });
+  const deleted = await Friendship.findOneAndDelete({ _id: req.params.id, status: 'pending', $or: [{ from: me }, { to: me }] })
+    .populate('from', MINI_USER_FIELDS)
+    .populate('to', MINI_USER_FIELDS);
   if (!deleted) throw new HttpError(404, 'Request not found');
+  if (deleted.from && deleted.to) friendshipRemoved(deleted.from, deleted.to);
   res.status(204).end();
 });
 
@@ -117,5 +124,6 @@ friendsRouter.delete('/:username', validate({ params: z.object({ username: usern
     ? await Friendship.deleteOne({ pair: pairKey(req.user._id, target._id), status: 'accepted' })
     : { deletedCount: 0 };
   if (result.deletedCount === 0) throw new HttpError(404, "You aren't friends with that player");
+  friendshipRemoved(req.user, target);
   res.status(204).end();
 });

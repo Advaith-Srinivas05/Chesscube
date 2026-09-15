@@ -8,7 +8,7 @@ const SLOW_CONNECT_MS = 2000;
 
 // Shown only while a page that needs the game server is open.
 export default function ConnectionBanner() {
-  const { consumers, status, connectingSince } = useSocketState();
+  const { pageConsumers, status, connectingSince } = useSocketState();
   const [slow, setSlow] = useState(false);
 
   useEffect(() => {
@@ -26,7 +26,7 @@ export default function ConnectionBanner() {
   }, [status, connectingSince]);
 
   const message = status === 'reconnecting' ? 'Reconnecting…' : status === 'connecting' && slow ? 'Connecting to the server…' : null;
-  if (consumers === 0 || !message) return null;
+  if (pageConsumers === 0 || !message) return null;
 
   return (
     <div className={styles.banner} role="status">

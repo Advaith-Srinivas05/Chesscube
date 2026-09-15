@@ -42,7 +42,7 @@ function useNow(active) {
   return now;
 }
 
-function Header({ summary }) {
+function Header({ summary, children }) {
   return (
     <div className={styles.header}>
       <Link to="/play" className={styles.back}>
@@ -52,6 +52,7 @@ function Header({ summary }) {
         Play
       </Link>
       {summary && <p className={styles.summary}>{summary}</p>}
+      {children}
     </div>
   );
 }
@@ -79,6 +80,15 @@ const ratingList = (players, diffs) =>
     ? ['white', 'black'].map((color) => ({ name: players[color].username ?? 'Deleted user', diff: diffs[color] }))
     : undefined;
 
+function EyeIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className={styles.eye}>
+      <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+}
+
 function Prompt({ children, actions }) {
   return (
     <div className={styles.prompt} role="status">
@@ -91,14 +101,16 @@ function Prompt({ children, actions }) {
 function LiveGame({ game }) {
   const { settings } = useSettings();
   const navigate = useNavigate();
-  const [orientation, setOrientation] = useState(game.role);
+  const spectator = game.isSpectator;
+  // Spectators see the board from their friend's side.
+  const [orientation, setOrientation] = useState(spectator ? game.watching ?? 'white' : game.role);
   const playing = game.status === 'playing';
-  const opponent = other(game.role);
+  const opponent = spectator ? null : other(game.role);
   const now = useNow(playing);
 
   useEffect(() => {
-    document.title = game.myTurn ? 'Your turn · Chesscube' : 'Game · Chesscube';
-  }, [game.myTurn]);
+    document.title = spectator ? 'Watching · Chesscube' : game.myTurn ? 'Your turn · Chesscube' : 'Game · Chesscube';
+  }, [game.myTurn, spectator]);
   useEffect(() => () => {
     document.title = 'Chesscube';
   }, []);
@@ -137,8 +149,8 @@ function LiveGame({ game }) {
       </Prompt>
     );
   }
-  const claimAt = game.claimAt[opponent];
-  if (playing && claimAt && game.moves.length >= 2) {
+  const claimAt = opponent ? game.claimAt[opponent] : null;
+  if (!spectator && playing && claimAt && game.moves.length >= 2) {
     const wait = Math.ceil((claimAt - now) / 1000);
     prompts.push(
       wait > 0 ? (
@@ -162,7 +174,7 @@ function LiveGame({ game }) {
       )
     );
   }
-  if (playing && game.drawOffer === opponent) {
+  if (!spectator && playing && game.drawOffer === opponent) {
     prompts.push(
       <Prompt
         key="draw"
@@ -180,7 +192,7 @@ function LiveGame({ game }) {
         Your opponent offers a draw.
       </Prompt>
     );
-  } else if (playing && game.drawOffer === game.role) {
+  } else if (!spectator && playing && game.drawOffer === game.role) {
     prompts.push(<Prompt key="draw">Draw offered. Waiting for your opponent…</Prompt>);
   }
 
@@ -200,7 +212,19 @@ function LiveGame({ game }) {
 
   return (
     <>
-      <Header summary={summaryOf(game)} />
+      <Header summary={summaryOf(game)}>
+        {spectator ? (
+          <span className={styles.chip}>
+            <EyeIcon /> Watching{game.spectators > 1 ? ` · ${game.spectators}` : ''}
+          </span>
+        ) : (
+          game.spectators > 0 && (
+            <span className={styles.watchers}>
+              <EyeIcon /> {game.spectators} watching
+            </span>
+          )
+        )}
+      </Header>
       <GameView
         label="Online game"
         board={
@@ -208,7 +232,7 @@ function LiveGame({ game }) {
             id="online-board"
             fen={game.fen}
             orientation={orientation}
-            movableColor={playing ? game.role : null}
+            movableColor={playing && !spectator ? game.role : null}
             turn={game.turn}
             dests={game.dests}
             lastMove={game.lastMove}
@@ -226,16 +250,24 @@ function LiveGame({ game }) {
         moveList={<MoveList moves={game.moves} viewPly={game.viewPly} onSelect={game.setViewPly} />}
         prompt={prompts.length > 0 && <div className={styles.prompts}>{prompts}</div>}
         controls={
-          playing && (
-            <GameControls
-              canAbort={game.moves.length < 2}
-              onAbort={game.abort}
-              canOfferDraw={game.moves.length >= 2 && !game.drawOffer && game.drawOffersLeft > 0}
-              onOfferDraw={game.offerDraw}
-              canResign={game.moves.length >= 2}
-              onResign={game.resign}
-              onFlip={() => setOrientation(other)}
-            />
+          spectator ? (
+            <div className={styles.replayControls}>
+              <Button variant="secondary" size="sm" onClick={() => setOrientation(other)}>
+                Flip board
+              </Button>
+            </div>
+          ) : (
+            playing && (
+              <GameControls
+                canAbort={game.moves.length < 2}
+                onAbort={game.abort}
+                canOfferDraw={game.moves.length >= 2 && !game.drawOffer && game.drawOffersLeft > 0}
+                onOfferDraw={game.offerDraw}
+                canResign={game.moves.length >= 2}
+                onResign={game.resign}
+                onFlip={() => setOrientation(other)}
+              />
+            )
           )
         }
         result={
@@ -246,15 +278,17 @@ function LiveGame({ game }) {
               ratings={ratingList(game.players, game.ratingDiffs)}
               actions={
                 <>
-                  {rematch}
-                  <Button
-                    variant="secondary"
-                    onClick={() =>
-                      navigate('/play', { state: { newGame: { variant: game.variant, base: game.tc.base, inc: game.tc.inc, rated: game.rated } } })
-                    }
-                  >
-                    New game
-                  </Button>
+                  {!spectator && rematch}
+                  {!spectator && (
+                    <Button
+                      variant="secondary"
+                      onClick={() =>
+                        navigate('/play', { state: { newGame: { variant: game.variant, base: game.tc.base, inc: game.tc.inc, rated: game.rated } } })
+                      }
+                    >
+                      New game
+                    </Button>
+                  )}
                   {game.moves.length > 0 && (
                     <Button
                       as={Link}
@@ -375,7 +409,7 @@ function StoredGame({ id, code }) {
   const copy = {
     live: {
       title: 'This game is still being played',
-      text: code === 'NOT_PLAYER' ? 'Only the two players can open a live game for now.' : 'Come back when it has finished to replay it.',
+      text: code === 'NOT_PLAYER' ? 'You can only watch games your friends are playing.' : 'Come back when it has finished to replay it.',
     },
     notfound: { title: 'Game not found', text: "This game doesn't exist, was aborted, or was a guest game that has ended." },
     error: { title: "Couldn't load this game", text: state.message },

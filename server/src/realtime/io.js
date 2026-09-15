@@ -4,10 +4,12 @@ import { Server } from 'socket.io';
 import { env } from '../config/env.js';
 import { User } from '../models/User.js';
 import { verifyPurposeToken } from '../services/tokens.js';
+import { incomingFor, registerChallengeHandlers } from './challenges.js';
 import { identityRoom, setIo, trackSocket } from './connections.js';
 import { listen } from './events.js';
 import { activeGameCount, activeGameOf, registerGameHandlers } from './games.js';
 import { ownSeekOf, registerLobbyHandlers } from './lobby.js';
+import './presence.js';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const STATS_INTERVAL_MS = 5000;
@@ -63,6 +65,7 @@ export function initRealtime(httpServer) {
     trackSocket(socket);
     registerGameHandlers(socket);
     registerLobbyHandlers(socket);
+    registerChallengeHandlers(socket);
 
     // Sockets on the Play page receive live stats.
     listen(socket, 'play:subscribe', null, () => {
@@ -76,6 +79,7 @@ export function initRealtime(httpServer) {
     socket.emit('session:identity', { kind: identity.kind, username: identity.username, avatar: identity.avatar });
     socket.emit('session:activeGame', { id: activeGameOf(identity.id) });
     socket.emit('lobby:own', { seek: ownSeekOf(identity.id) });
+    if (identity.kind === 'user') for (const challenge of incomingFor(identity.id)) socket.emit('challenge:incoming', challenge);
   });
 
   setInterval(() => {

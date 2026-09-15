@@ -43,6 +43,7 @@ export const socket = io(import.meta.env.VITE_API_URL, {
 
 let state = {
   consumers: 0,
+  pageConsumers: 0, // consumers that aren't the app-wide background connection (the banner shows only for these)
   status: 'idle', // 'idle' | 'connecting' | 'connected' | 'reconnecting'
   connectingSince: null,
   identity: null, // { kind, username, avatar }
@@ -102,15 +103,17 @@ export function setSocketAuth({ ready, userId }) {
 }
 
 // Reference-counted: returns a release function. The connection closes 30 s after the last consumer leaves.
-export function retainSocket() {
+// `background` marks the app-wide connection of signed-in users, which doesn't show the connection banner.
+export function retainSocket({ background = false } = {}) {
   clearTimeout(idleTimer);
-  update({ consumers: state.consumers + 1 });
+  const page = background ? 0 : 1;
+  update({ consumers: state.consumers + 1, pageConsumers: state.pageConsumers + page });
   sync();
   let released = false;
   return () => {
     if (released) return;
     released = true;
-    update({ consumers: state.consumers - 1 });
+    update({ consumers: state.consumers - 1, pageConsumers: state.pageConsumers - page });
     if (state.consumers === 0) {
       idleTimer = setTimeout(() => {
         if (state.consumers === 0) socket.disconnect();

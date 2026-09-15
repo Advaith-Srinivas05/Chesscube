@@ -70,6 +70,19 @@ a.name:hover {
   font-size: 13px;
 }
 
+.live {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.onlineCount {
+  margin-left: auto;
+  color: var(--success);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 700;
+}
+
 .actions {
   display: flex;
   flex-shrink: 0;
