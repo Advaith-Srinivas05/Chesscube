@@ -26,6 +26,7 @@ import { hashPassword, verifyPassword } from '../services/passwords.js';
 import { clearSessionCookie, signIn } from '../services/tokens.js';
 import { usernameTaken } from '../services/usernames.js';
 import { isAvatarId } from '../shared/avatars.js';
+import { isLessonId } from '../shared/lessonIds.js';
 import { PASSWORD_MAX } from '../shared/validation.js';
 
 const MINUTE = 60 * 1000;
@@ -198,6 +199,15 @@ usersRouter.delete(
     res.status(204).end();
   }
 );
+
+// Marks a lesson as completed. Repeats are harmless ($addToSet).
+usersRouter.post('/me/lessons/:lessonId', requireAuth, limiter({ windowMs: MINUTE, limit: 30 }), async (req, res) => {
+  const { lessonId } = req.params;
+  if (!isLessonId(lessonId)) throw new HttpError(404, 'Lesson not found');
+  const user = await User.findByIdAndUpdate(req.user._id, { $addToSet: { lessons: lessonId } }, { new: true });
+  if (!user) throw new HttpError(401, 'Sign in again');
+  res.json({ lessons: user.lessons ?? [], user: user.toSelf() });
+});
 
 // Username prefix search for adding friends. Defined before /:username, so "search" is a reserved username.
 usersRouter.get(

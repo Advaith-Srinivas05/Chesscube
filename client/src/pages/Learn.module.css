@@ -1,0 +1,267 @@
+.header {
+  max-width: 720px;
+  margin-bottom: 24px;
+}
+
+.title {
+  margin: 0 0 6px;
+  font-family: var(--font-display);
+  font-size: 36px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.intro {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 16px;
+}
+
+.hint {
+  margin: 10px 0 0;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.link {
+  color: var(--text);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* Analysis board card */
+.feature {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 200px;
+  align-items: center;
+  gap: 28px;
+  margin-bottom: 40px;
+  padding: 26px 28px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: linear-gradient(120deg, var(--accent-soft), transparent 65%), var(--surface);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.feature:hover {
+  border-color: var(--accent);
+  box-shadow: var(--shadow);
+}
+
+.featureText {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.eyebrow {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.featureTitle {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.featureCopy {
+  max-width: 520px;
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.featureAction {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  font-weight: 800;
+}
+
+.featureAction svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: translate 0.2s ease;
+}
+
+.feature:hover .featureAction svg {
+  translate: 3px 0;
+}
+
+.featureBoard {
+  width: 200px;
+  pointer-events: none;
+}
+
+/* Lesson groups */
+.group + .group {
+  margin-top: 36px;
+}
+
+.groupHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10px 24px;
+  margin-bottom: 14px;
+}
+
+.groupTitle {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.groupSummary {
+  margin: 2px 0 0;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.progressText {
+  font-size: 14px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.progressBar {
+  width: 120px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px var(--border);
+  overflow: hidden;
+}
+
+.progressBar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+}
+
+.lessons {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lessons li {
+  display: flex;
+}
+
+.lesson {
+  display: flex;
+  flex: 1;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  transition: border-color 0.15s ease, background-color 0.15s ease, translate 0.15s ease;
+}
+
+.lesson:hover {
+  border-color: var(--accent);
+  translate: 0 -2px;
+}
+
+.number {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: var(--surface-2);
+  color: var(--text-muted);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.lessonDone .number {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.checkIcon {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.lessonBody {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.lessonTitle {
+  font-weight: 800;
+}
+
+.lessonSummary {
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.lessonMeta {
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.completed {
+  color: var(--success);
+}
+
+@media (max-width: 639px) {
+  .title {
+    font-size: 30px;
+  }
+
+  .feature {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+    padding: 20px;
+  }
+
+  .featureBoard {
+    display: none;
+  }
+
+  .lessons {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

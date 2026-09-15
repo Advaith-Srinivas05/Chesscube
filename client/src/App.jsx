@@ -9,6 +9,7 @@ import ForgotPassword from './pages/ForgotPassword.jsx';
 import Home from './pages/Home.jsx';
 import Leaderboard from './pages/Leaderboard.jsx';
 import Learn from './pages/Learn.jsx';
+import Lesson from './pages/Lesson.jsx';
 import Play from './pages/Play.jsx';
 import PlayComputer from './pages/PlayComputer.jsx';
 import Profile from './pages/Profile.jsx';
@@ -33,6 +34,7 @@ export default function App() {
         <Route path="puzzles/daily" element={<RequireAuth><DailyPuzzle /></RequireAuth>} />
         <Route path="learn" element={<Learn />} />
         <Route path="learn/analysis/:gameId?" element={<Analysis />} />
+        <Route path="learn/lessons/:lessonId" element={<Lesson />} />
         <Route path="leaderboard/:category?" element={<Leaderboard />} />
         <Route path="socials" element={<Socials />} />
         <Route path="signin" element={guest(<SignIn />)} />

@@ -64,6 +64,7 @@ export function AuthProvider({ children }) {
         withUser(api.post('/users/me/password', { currentPassword, newPassword })),
       requestEmailChange: (email, password) => api.post('/users/me/email', { email, password }),
       confirmEmailChange: (code) => withUser(api.post('/users/me/email/verify', { code })),
+      completeLesson: (lessonId) => withUser(api.post(`/users/me/lessons/${encodeURIComponent(lessonId)}`)),
       // Doesn't clear `user`: the caller navigates away in the same transition, so guarded pages don't redirect to sign-in.
       deleteAccount: (confirmation) => api.delete('/users/me', confirmation),
       signOut: async () => {

@@ -11,9 +11,14 @@ const TINT = 'rgba(255, 196, 64, 0.38)';
 const PREMOVE_TINT = 'rgba(40, 70, 160, 0.34)';
 const DOT = 'rgba(0, 0, 0, 0.22)';
 const PREMOVE_DOT = 'rgba(40, 70, 160, 0.42)';
-const HIGHLIGHTS = { good: 'rgba(70, 160, 70, 0.55)', bad: 'rgba(205, 55, 45, 0.55)' };
-
 const fill = (color) => `linear-gradient(${color}, ${color})`;
+const STAR_SVG =
+  "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M12 2.5l2.8 6.3 6.9.7-5.2 4.6 1.5 6.8L12 17.4l-6 3.5 1.5-6.8-5.2-4.6 6.9-.7z' fill='#f5b82e' stroke='#6b4309' stroke-width='1.2' stroke-linejoin='round'/></svg>";
+const HIGHLIGHTS = {
+  good: fill('rgba(70, 160, 70, 0.55)'),
+  bad: fill('rgba(205, 55, 45, 0.55)'),
+  star: `url("data:image/svg+xml,${encodeURIComponent(STAR_SVG)}") center / 58% no-repeat`,
+};
 const dot = (color) => `radial-gradient(circle, ${color} 19%, transparent 20%)`;
 const ring = (color) => `radial-gradient(transparent 0 60%, ${color} 61% 72%, transparent 73%)`;
 const CHECK = 'radial-gradient(circle, rgba(220, 40, 40, 0.95) 0%, rgba(220, 40, 40, 0.6) 40%, transparent 78%)';
@@ -43,7 +48,7 @@ function piecesFromFen(fen) {
  * Playable board. The parent owns the game: it passes the position and legal destinations and
  * applies moves from `onMove`. Premoves are enabled by passing `onPremove`.
  * `showDests` and `autoQueen` default to the player's settings.
- * `highlights` tints squares for feedback: { e4: 'good' | 'bad' }.
+ * `highlights` marks squares: { e4: 'good' | 'bad' | 'star' } (tints for feedback, stars for lesson targets).
  * `arrows` are drawn by the parent ([{ startSquare, endSquare, color }]), on top of the player's own arrows.
  */
 export default function InteractiveBoard({
@@ -184,7 +189,7 @@ export default function InteractiveBoard({
       add(premove.to, fill(PREMOVE_TINT));
     }
     for (const [square, kind] of Object.entries(highlights ?? {})) {
-      if (HIGHLIGHTS[kind]) add(square, fill(HIGHLIGHTS[kind]));
+      if (HIGHLIGHTS[kind]) add(square, HIGHLIGHTS[kind]);
     }
     if (lastMove) {
       add(lastMove[0], fill(TINT));
