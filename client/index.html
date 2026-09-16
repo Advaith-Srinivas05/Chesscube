@@ -11,14 +11,8 @@
       href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Manrope:wght@400;500;600;700&display=swap"
     />
     <title>Chesscube</title>
-    <script>
-      // Apply the saved theme before the first paint to avoid a flash of the wrong colours.
-      try {
-        var saved = JSON.parse(localStorage.getItem('settings') || '{}').theme;
-        var dark = saved === 'dark' || (saved !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
-        document.documentElement.dataset.theme = dark ? 'dark' : 'light';
-      } catch (e) {}
-    </script>
+    <!-- Applies the saved theme before the first paint. A file rather than inline, so the CSP needs no inline scripts. -->
+    <script src="/theme.js"></script>
   </head>
   <body>
     <div id="root"></div>

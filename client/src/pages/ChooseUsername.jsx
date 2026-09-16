@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Link, Navigate, useLocation } from 'react-router-dom';
-import { GOOGLE_SIGNUP_KEY } from '../components/GoogleButton.jsx';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { GOOGLE_SIGNUP_KEY, goToGoogleLink } from '../components/GoogleButton.jsx';
 import UsernameStatus from '../components/UsernameStatus.jsx';
 import Button from '../components/ui/Button.jsx';
 import Field from '../components/ui/Field.jsx';
@@ -33,6 +33,7 @@ export default function ChooseUsername() {
   const toast = useToast();
   const next = useNextPath();
   const location = useLocation();
+  const navigate = useNavigate();
   const [signup] = useState(() => readSignup(location.state));
   const [username, setUsername] = useState(signup?.suggestion ?? '');
   const [error, setError] = useState(null);
@@ -47,9 +48,14 @@ export default function ChooseUsername() {
     setError(null);
     setLoading(true);
     try {
-      const { user } = await completeGoogleSignup(signup.signupToken, username.trim());
+      const data = await completeGoogleSignup(signup.signupToken, username.trim());
       clearSignup();
-      toast.show(`Welcome to Chesscube, ${user.username}!`, { tone: 'success' });
+      // The email was registered in the meantime by an account Google can't link to without its password.
+      if (data.needsLink) {
+        goToGoogleLink(navigate, data, next);
+        return;
+      }
+      toast.show(`Welcome to Chesscube, ${data.user.username}!`, { tone: 'success' });
     } catch (err) {
       setLoading(false);
       setError({ message: err.message, field: err.field, expired: err.code === 'SIGNUP_EXPIRED' });

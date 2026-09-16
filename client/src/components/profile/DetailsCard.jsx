@@ -1,4 +1,5 @@
-import { useId, useState } from 'react';
+import { startTransition, useId, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useUsernameAvailability } from '../../hooks/useUsernameAvailability.js';
 import { PASSWORD_MAX, passwordIssues } from '../../shared/validation.js';
@@ -57,6 +58,12 @@ export default function DetailsCard({ user, isOwn = false, onSaved }) {
                 <dt>Password</dt>
                 <dd className={user.hasPassword ? '' : styles.muted}>{user.hasPassword ? '••••••••' : 'Not set'}</dd>
               </div>
+              <div className={styles.row}>
+                <dt>Sessions</dt>
+                <dd>
+                  <SignOutEverywhere />
+                </dd>
+              </div>
             </dl>
           )}
 
@@ -64,6 +71,55 @@ export default function DetailsCard({ user, isOwn = false, onSaved }) {
         </>
       )}
     </section>
+  );
+}
+
+// Signs the account out on every device, e.g. after using a shared computer or losing a phone.
+function SignOutEverywhere() {
+  const { signOutEverywhere, setUser } = useAuth();
+  const toast = useToast();
+  const navigate = useNavigate();
+  const [confirming, setConfirming] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  async function confirm() {
+    setBusy(true);
+    try {
+      await signOutEverywhere();
+      // In one transition with the navigation, so the profile's sign-in guard doesn't redirect first.
+      startTransition(() => {
+        navigate('/', { replace: true });
+        setUser(null);
+      });
+      toast.show('Signed out on all devices');
+    } catch (err) {
+      setBusy(false);
+      toast.show(err.message, { tone: 'danger' });
+    }
+  }
+
+  if (!confirming) {
+    return (
+      <div className={styles.sessions}>
+        <span className={styles.sessionsText}>Signed in on this device</span>
+        <Button variant="secondary" size="sm" onClick={() => setConfirming(true)}>
+          Sign out everywhere
+        </Button>
+      </div>
+    );
+  }
+  return (
+    <div className={styles.sessions} role="group" aria-label="Confirm sign out everywhere">
+      <span className={styles.sessionsText}>Sign out on all devices, including this one?</span>
+      <span className={styles.sessionsActions}>
+        <Button variant="ghost" size="sm" onClick={() => setConfirming(false)} disabled={busy}>
+          Cancel
+        </Button>
+        <Button variant="danger" size="sm" onClick={confirm} loading={busy} autoFocus>
+          Sign out
+        </Button>
+      </span>
+    </div>
   );
 }
 

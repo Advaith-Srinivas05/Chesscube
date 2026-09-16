@@ -62,6 +62,23 @@
   overflow-wrap: anywhere;
 }
 
+.sessions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+}
+
+.sessionsText {
+  font-weight: 500;
+}
+
+.sessionsActions {
+  display: flex;
+  gap: 8px;
+}
+
 .row dd.muted {
   color: var(--text-muted);
   font-weight: 500;

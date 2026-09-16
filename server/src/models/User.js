@@ -59,6 +59,11 @@ const userSchema = new mongoose.Schema(
       default: () => ({}),
     },
     lessons: { type: [String], default: undefined },
+    // Wrong password reset codes in the current window (services/resetGuard.js); absent until the first one.
+    resetGuard: {
+      type: new mongoose.Schema({ guesses: { type: Number }, since: { type: Date } }, { _id: false }),
+      default: undefined,
+    },
   },
   { timestamps: true }
 );

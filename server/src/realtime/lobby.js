@@ -10,12 +10,24 @@ import { activeGameOf, createGame, onGameStart } from './games.js';
 /**
  * Open games waiting for an opponent. Quick pairing tiles are presets for these: a quick request joins
  * the oldest matching open game, or opens one that the next player with the same preset joins.
- * id -> { id, owner: identity, population, variant, tc, rated, color, rating, provisional, presetId, createdAt }
+ * id -> { id, owner: identity, ip, population, variant, tc, rated, color, rating, provisional, presetId, createdAt }
  */
 const seeks = new Map();
 const seekIdByOwner = new Map();
 
 const lobbyRoom = (population) => `lobby:${population}`;
+
+// Guest ids are free to make, so open guest games are also capped per IP to keep one script from filling the lobby.
+export const MAX_GUEST_SEEKS_PER_IP = 3;
+
+// Open guest games from `ip`, not counting `identityId`'s own (which a new one replaces).
+export function guestSeeksFrom(openSeeks, ip, identityId) {
+  let count = 0;
+  for (const seek of openSeeks) {
+    if (seek.population === 'guests' && seek.ip === ip && seek.owner.id !== identityId) count += 1;
+  }
+  return count;
+}
 
 export function publicSeek(seek) {
   return {
@@ -78,9 +90,13 @@ async function ratingFor(identity, category) {
 }
 
 // Opens a seek for `identity`, replacing any open one (one per player).
-function openSeek(identity, fields) {
+function openSeek(identity, ip, fields) {
+  const population = populationOf(identity);
+  if (population === 'guests' && guestSeeksFrom(seeks.values(), ip, identity.id) >= MAX_GUEST_SEEKS_PER_IP) {
+    throw new EventError('Too many open games from your network. Sign in or try again later.', 'TOO_MANY_SEEKS');
+  }
   removeSeekOf(identity.id);
-  const seek = { id: crypto.randomUUID(), owner: identity, population: populationOf(identity), presetId: null, createdAt: Date.now(), ...fields };
+  const seek = { id: crypto.randomUUID(), owner: identity, ip, population, presetId: null, createdAt: Date.now(), ...fields };
   seeks.set(seek.id, seek);
   seekIdByOwner.set(identity.id, seek.id);
   getIo()?.to(lobbyRoom(seek.population)).emit('lobby:added', publicSeek(seek));
@@ -111,7 +127,7 @@ const createSchema = z.object({
 });
 
 export function registerLobbyHandlers(socket) {
-  const { identity } = socket.data;
+  const { identity, ip } = socket.data;
   const population = populationOf(identity);
 
   const ensureFree = () => {
@@ -134,7 +150,7 @@ export function registerLobbyHandlers(socket) {
     ensureFree();
     const ratingInfo = await ratingFor(identity, categoryFor({ variant, base, inc }));
     ensureFree();
-    const seek = openSeek(identity, { variant, tc: { base, inc }, rated, color, ...ratingInfo });
+    const seek = openSeek(identity, ip, { variant, tc: { base, inc }, rated, color, ...ratingInfo });
     return { seek: publicSeek(seek) };
   });
 
@@ -153,7 +169,7 @@ export function registerLobbyHandlers(socket) {
       const game = await acceptSeek(match, identity);
       return { matched: true, id: game.id };
     }
-    const seek = openSeek(identity, { variant: 'standard', tc: { base: preset.base, inc: preset.inc }, rated, color: 'random', presetId, ...ratingInfo });
+    const seek = openSeek(identity, ip, { variant: 'standard', tc: { base: preset.base, inc: preset.inc }, rated, color: 'random', presetId, ...ratingInfo });
     return { matched: false, seek: publicSeek(seek) };
   });
 

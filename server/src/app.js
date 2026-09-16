@@ -3,6 +3,7 @@ import cors from 'cors';
 import express from 'express';
 import helmet from 'helmet';
 import { env } from './config/env.js';
+import { resolveClientIp } from './lib/clientIp.js';
 import { optionalAuth } from './middleware/auth.js';
 import { errorHandler, notFound } from './middleware/errors.js';
 import { authRouter } from './routes/auth.js';
@@ -28,9 +29,14 @@ function requireJson(req, res, next) {
 export function createApp() {
   const app = express();
 
-  // In production requests arrive through Vercel's rewrite and the host's proxy, so req.ip comes from
-  // X-Forwarded-For. Someone calling the API host directly could spoof it; acceptable for rate limiting here.
-  if (env.isProd) app.set('trust proxy', true);
+  // 'trust proxy' stays off: it would read the leftmost X-Forwarded-For entry, which anyone calling the API host
+  // directly can make up. req.ip is replaced with the address resolveClientIp trusts instead.
+  app.use((req, res, next) => {
+    const { ip, source } = resolveClientIp(req.headers, req.socket.remoteAddress, env);
+    Object.defineProperty(req, 'ip', { value: ip, configurable: true, enumerable: true });
+    req.ipSource = source;
+    next();
+  });
 
   app.use(helmet());
   app.use(cors({ origin: env.clientOrigins, credentials: true }));
@@ -39,6 +45,8 @@ export function createApp() {
   app.use(express.json({ limit: '20kb' }));
 
   app.get('/api/health', (req, res) => res.json({ ok: true }));
+  // Deploy check: through the website this should say "vercel" and show your own IP.
+  app.get('/api/health/ip', (req, res) => res.json({ ip: req.ip, source: req.ipSource }));
 
   app.use('/api', optionalAuth);
   app.use('/api/auth', authRouter);

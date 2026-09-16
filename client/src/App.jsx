@@ -11,6 +11,7 @@ const ChooseUsername = lazy(() => import('./pages/ChooseUsername.jsx'));
 const DailyPuzzle = lazy(() => import('./pages/DailyPuzzle.jsx'));
 const Game = lazy(() => import('./pages/Game.jsx'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword.jsx'));
+const LinkGoogle = lazy(() => import('./pages/LinkGoogle.jsx'));
 const Leaderboard = lazy(() => import('./pages/Leaderboard.jsx'));
 const Learn = lazy(() => import('./pages/Learn.jsx'));
 const Lesson = lazy(() => import('./pages/Lesson.jsx'));
@@ -43,6 +44,7 @@ export default function App() {
         <Route path="leaderboard/:category?" element={<Leaderboard />} />
         <Route path="socials" element={<Socials />} />
         <Route path="signin" element={guest(<SignIn />)} />
+        <Route path="signin/link-google" element={guest(<LinkGoogle />)} />
         <Route path="signup" element={guest(<SignUp />)} />
         <Route path="signup/username" element={guest(<ChooseUsername />)} />
         <Route path="verify-email" element={guest(<VerifyEmail />)} />

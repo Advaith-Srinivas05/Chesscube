@@ -10,6 +10,7 @@
     "lessons:check": "node scripts/validateLessons.js"
   },
   "dependencies": {
+    "@vercel/functions": "^3.9.8",
     "chess.js": "^1.4.0",
     "chessops": "^0.15.1",
     "react": "^19.3.0",

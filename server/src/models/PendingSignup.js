@@ -10,6 +10,9 @@ const pendingSignupSchema = new mongoose.Schema({
   codeHash: { type: String, required: true },
   attempts: { type: Number, default: 0 },
   sends: { type: Number, default: 1 },
+  // The email already belongs to an account: its owner is told so instead of receiving a code.
+  existingAccount: { type: Boolean, default: undefined },
+  startedAt: { type: Date }, // when this sign-up was submitted; limits how long it holds the username
   lastSentAt: { type: Date, required: true },
   expiresAt: { type: Date, required: true },
 });

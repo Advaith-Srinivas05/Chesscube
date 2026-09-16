@@ -62,6 +62,7 @@ export function AuthProvider({ children }) {
       googleSignIn: (credential) => withUser(api.post('/auth/google', { credential })),
       completeGoogleSignup: (signupToken, username) =>
         withUser(api.post('/auth/google/complete', { signupToken, username })),
+      linkGoogle: (linkToken, password) => withUser(api.post('/auth/google/link', { linkToken, password })),
       forgotPassword: (email) => api.post('/auth/forgot-password', { email }),
       resetPassword: ({ email, code, password }) =>
         withUser(api.post('/auth/reset-password', { email, code, password })),
@@ -80,6 +81,9 @@ export function AuthProvider({ children }) {
           setUser(null);
         }
       },
+      // Ends every session of the account, on all devices. Like deleteAccount it doesn't clear `user`: the caller
+      // navigates away and clears it in one transition.
+      signOutEverywhere: () => api.post('/auth/logout-all'),
     };
   }, [setUser]);
 

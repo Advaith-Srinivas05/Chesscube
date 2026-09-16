@@ -8,6 +8,23 @@ import styles from './GoogleButton.module.css';
 const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 export const GOOGLE_ENABLED = Boolean(CLIENT_ID);
 export const GOOGLE_SIGNUP_KEY = 'googleSignup';
+export const GOOGLE_LINK_KEY = 'googleLink';
+
+// Router state is lost on refresh, so the Google pages also keep a copy in sessionStorage.
+export function rememberGoogleStep(key, state) {
+  try {
+    sessionStorage.setItem(key, JSON.stringify(state));
+  } catch {
+    // Without storage a refresh on the next page just starts over.
+  }
+}
+
+// An existing account whose email Google can't vouch for: its password is asked once before linking.
+export function goToGoogleLink(navigate, data, next) {
+  const state = { linkToken: data.linkToken, email: data.email };
+  rememberGoogleStep(GOOGLE_LINK_KEY, state);
+  navigate(withNext('/signin/link-google', next), { state });
+}
 
 let scriptPromise;
 function loadGoogleScript() {
@@ -44,12 +61,10 @@ export default function GoogleButton({ next = '/', onError }) {
         const data = await googleSignIn(credential);
         if (data.needsUsername) {
           const state = { signupToken: data.signupToken, suggestion: data.suggestion };
-          try {
-            sessionStorage.setItem(GOOGLE_SIGNUP_KEY, JSON.stringify(state));
-          } catch {
-            // Without storage a refresh on the next page just starts over.
-          }
+          rememberGoogleStep(GOOGLE_SIGNUP_KEY, state);
           navigate(withNext('/signup/username', next), { state });
+        } else if (data.needsLink) {
+          goToGoogleLink(navigate, data, next);
         }
       } catch (err) {
         onError?.(err.message);

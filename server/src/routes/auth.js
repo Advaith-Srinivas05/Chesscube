@@ -10,6 +10,7 @@ import { validate } from '../middleware/validate.js';
 import { EmailCode } from '../models/EmailCode.js';
 import { PendingSignup } from '../models/PendingSignup.js';
 import { User } from '../models/User.js';
+import { disconnectUser } from '../realtime/connections.js';
 import {
   CODE_TTL_MS,
   codeIsFresh,
@@ -19,15 +20,18 @@ import {
   hashCode,
   MAX_CODE_ATTEMPTS,
 } from '../services/codes.js';
-import { passwordResetEmail, verificationEmail } from '../services/emailTemplates.js';
+import { existingAccountEmail, passwordResetEmail, verificationEmail } from '../services/emailTemplates.js';
 import { countIncomingRequests } from '../services/friends.js';
 import { mailErrorSummary, sendMail } from '../services/mailer.js';
+import { mailLimitError, reserveEmail } from '../services/mailQuota.js';
 import { hashPassword, verifyPassword } from '../services/passwords.js';
+import { recordWrongResetGuess, resetLocked } from '../services/resetGuard.js';
 import { clearSessionCookie, signIn, signPurposeToken, verifyPurposeToken } from '../services/tokens.js';
-import { usernameTaken } from '../services/usernames.js';
+import { USERNAME_HOLD_MS, usernameTaken } from '../services/usernames.js';
 import { PASSWORD_MAX, usernameIssue, USERNAME_RE } from '../shared/validation.js';
 
 const MINUTE = 60 * 1000;
+const DAY = 24 * 60 * MINUTE;
 const PENDING_TTL_MS = 30 * MINUTE;
 const MAX_SENDS = 5;
 const RESEND_SECONDS = 60;
@@ -51,8 +55,21 @@ async function sendOrFail(message) {
   }
 }
 
+// A sign-up for an address that already has an account gets the same response as any other; its owner is emailed a
+// notice instead of a code, so the form can't be used to find out which emails are registered.
+const signupEmail = (pending, newCode) =>
+  pending.existingAccount ? existingAccountEmail() : verificationEmail({ username: pending.username, code: newCode });
+
 // bcrypt work for unknown accounts too, so response times don't reveal which usernames exist.
 const DUMMY_HASH = await hashPassword('timing-equaliser-Aa1');
+
+// Every route that emails a code shares this per-IP daily budget, on top of its own limits.
+const mailIpLimiter = limiter({
+  windowMs: DAY,
+  limit: 30,
+  name: 'mail-ip',
+  message: 'Too many emails requested from your network today. Try again tomorrow.',
+});
 
 // ---- Router ----
 
@@ -71,6 +88,14 @@ authRouter.get('/socket-token', requireAuth, (req, res) => {
 
 authRouter.post('/logout', (req, res) => {
   clearSessionCookie(res);
+  res.status(204).end();
+});
+
+// Ends every session of the account, including stolen cookies: tokens carry tokenVersion, which no longer matches.
+authRouter.post('/logout-all', requireAuth, async (req, res) => {
+  await User.updateOne({ _id: req.user._id }, { $inc: { tokenVersion: 1 } });
+  clearSessionCookie(res);
+  disconnectUser(req.user._id);
   res.status(204).end();
 });
 
@@ -95,55 +120,63 @@ authRouter.get(
 
 authRouter.post(
   '/signup',
-  limiter({ windowMs: 60 * MINUTE, limit: 10 }),
+  limiter({ windowMs: 60 * MINUTE, limit: 10, name: 'signup' }),
+  mailIpLimiter,
   validate({ body: z.object({ username, email, password }) }),
   async (req, res) => {
     const { username: name, email: address, password: plain } = req.body;
+    const usernameLower = name.toLowerCase();
     const now = new Date();
 
-    if (await User.exists({ email: address })) {
-      const error = new HttpError(409, 'An account with this email already exists');
-      error.field = 'email';
-      throw error;
-    }
     if (await usernameTaken(name, { email: address })) {
       const error = new HttpError(409, 'That username is taken');
       error.field = 'username';
       throw error;
     }
 
-    // Expired sign-ups the TTL monitor hasn't removed yet would otherwise trip the unique indexes.
-    await PendingSignup.deleteMany({ $or: [{ email: address }, { usernameLower: name.toLowerCase() }], expiresAt: { $lte: now } });
+    // Expired sign-ups, and ones whose hold on this username has lapsed, would otherwise trip the unique indexes.
+    await PendingSignup.deleteMany({
+      $or: [
+        { email: address, expiresAt: { $lte: now } },
+        { usernameLower, expiresAt: { $lte: now } },
+        { usernameLower, email: { $ne: address }, startedAt: { $lte: new Date(now.getTime() - USERNAME_HOLD_MS) } },
+      ],
+    });
 
+    // A new sign-up for the same address replaces the old one once the cooldown has passed, so nobody can lock an
+    // address by starting sign-ups for it. The per-address email limit stops this from flooding the inbox.
     const existing = await PendingSignup.findOne({ email: address });
-    if (existing) {
-      const wait = cooldownRemaining(existing.lastSentAt);
-      if (wait > 0) throw tooSoon(wait);
-      if (existing.sends >= MAX_SENDS) throw new HttpError(429, 'Too many codes sent. Try again later.');
-    }
+    const wait = cooldownRemaining(existing?.lastSentAt);
+    if (wait > 0) throw tooSoon(wait);
+
+    const limited = await reserveEmail(address);
+    if (limited) throw mailLimitError(limited);
 
     const newCode = generateCode();
     const fields = {
       username: name,
-      usernameLower: name.toLowerCase(),
+      usernameLower,
       email: address,
       passwordHash: await hashPassword(plain),
       codeHash: hashCode(newCode),
       attempts: 0,
+      sends: 1,
+      existingAccount: (await User.exists({ email: address })) ? true : undefined,
+      startedAt: now,
       lastSentAt: now,
       expiresAt: new Date(now.getTime() + PENDING_TTL_MS),
     };
 
     let pending;
     if (existing) {
-      existing.set({ ...fields, sends: existing.sends + 1 });
+      existing.set(fields);
       pending = await existing.save();
     } else {
       pending = await PendingSignup.create(fields);
     }
 
     try {
-      await sendOrFail({ to: address, ...verificationEmail({ username: name, code: newCode }) });
+      await sendOrFail({ to: address, ...signupEmail(pending, newCode) });
     } catch (err) {
       // The code never arrived: don't make the user wait out the cooldown.
       await PendingSignup.updateOne({ _id: pending._id }, { $set: { lastSentAt: new Date(0) } });
@@ -156,7 +189,7 @@ authRouter.post(
 
 authRouter.post(
   '/signup/verify',
-  limiter({ windowMs: 15 * MINUTE, limit: 30 }),
+  limiter({ windowMs: 15 * MINUTE, limit: 30, name: 'signup-verify' }),
   validate({ body: z.object({ email, code }) }),
   async (req, res) => {
     const { email: address, code: entered } = req.body;
@@ -190,7 +223,8 @@ authRouter.post(
 
 authRouter.post(
   '/signup/resend',
-  limiter({ windowMs: 60 * MINUTE, limit: 5 }),
+  limiter({ windowMs: 60 * MINUTE, limit: 5, name: 'signup-resend' }),
+  mailIpLimiter,
   validate({ body: z.object({ email }) }),
   async (req, res) => {
     const pending = await PendingSignup.findOne({ email: req.body.email, ...notExpired() });
@@ -198,6 +232,9 @@ authRouter.post(
     const wait = cooldownRemaining(pending.lastSentAt);
     if (wait > 0) throw tooSoon(wait);
     if (pending.sends >= MAX_SENDS) throw new HttpError(429, 'Too many codes sent. Sign up again later.');
+
+    const limited = await reserveEmail(pending.email);
+    if (limited) throw mailLimitError(limited);
 
     const newCode = generateCode();
     const now = new Date();
@@ -213,7 +250,7 @@ authRouter.post(
     if (!updated) throw tooSoon(RESEND_SECONDS);
 
     try {
-      await sendOrFail({ to: updated.email, ...verificationEmail({ username: updated.username, code: newCode }) });
+      await sendOrFail({ to: updated.email, ...signupEmail(updated, newCode) });
     } catch (err) {
       await PendingSignup.updateOne({ _id: updated._id }, { $set: { lastSentAt: new Date(0) } });
       throw err;
@@ -229,12 +266,19 @@ const loginKey = (req) => String(req.body?.login ?? '').trim().toLowerCase();
 authRouter.post(
   '/signin',
   // Per account, whatever the IP: slows password spraying from many addresses.
-  limiter({ windowMs: 60 * MINUTE, limit: 30, skipSuccessfulRequests: true, keyGenerator: (req) => `login:${loginKey(req)}` }),
+  limiter({
+    windowMs: 60 * MINUTE,
+    limit: 30,
+    skipSuccessfulRequests: true,
+    keyGenerator: (req) => `login:${loginKey(req)}`,
+    name: 'signin-login',
+  }),
   limiter({
     windowMs: 15 * MINUTE,
     limit: 10,
     skipSuccessfulRequests: true,
-    keyGenerator: (req) => `${ipKeyGenerator(req.ip ?? '')}:${loginKey(req)}`,
+    keyGenerator: (req) => `${ipKeyGenerator(req.ip)}:${loginKey(req)}`,
+    name: 'signin-ip',
   }),
   validate({
     body: z.object({
@@ -262,13 +306,13 @@ authRouter.post(
     }
 
     // Right password for an unverified sign-up: send a fresh code if allowed, then point them at verification.
-    if (cooldownRemaining(pending.lastSentAt) === 0 && pending.sends < MAX_SENDS) {
+    if (cooldownRemaining(pending.lastSentAt) === 0 && pending.sends < MAX_SENDS && !(await reserveEmail(pending.email))) {
       const newCode = generateCode();
       const now = new Date();
       pending.set({ codeHash: hashCode(newCode), attempts: 0, lastSentAt: now, expiresAt: new Date(now.getTime() + PENDING_TTL_MS), sends: pending.sends + 1 });
       await pending.save();
       try {
-        await sendMail({ to: pending.email, ...verificationEmail({ username: pending.username, code: newCode }) });
+        await sendMail({ to: pending.email, ...signupEmail(pending, newCode) });
       } catch (err) {
         console.error('Email failed:', mailErrorSummary(err));
         await PendingSignup.updateOne({ _id: pending._id }, { $set: { lastSentAt: new Date(0) } });
@@ -288,6 +332,24 @@ const googleClient = new OAuth2Client();
 
 function requireGoogle() {
   if (!env.googleClientId) throw new HttpError(503, 'Google sign-in is not configured');
+}
+
+// Google is the authority for Gmail addresses and for Workspace accounts (the `hd` claim); for any other address it
+// only confirmed the email once, so an existing account with that email asks for its password before linking.
+export function googleOwnsEmail({ email: address, hd }) {
+  return Boolean(hd) || /@(gmail|googlemail)\.com$/i.test(address);
+}
+
+// Signs in to the account with this email if Google may link to it; otherwise the client asks for its password.
+async function linkOrAskPassword(res, user, { sub, email: address, hd }) {
+  if (googleOwnsEmail({ email: address, hd })) {
+    user.googleId = sub;
+    await user.save();
+    signIn(res, user);
+    return res.json({ user: user.toSelf() });
+  }
+  const linkToken = signPurposeToken({ sub, email: address }, 'google-link', '15m');
+  res.json({ needsLink: true, linkToken, email: address });
 }
 
 // A valid, available username based on the Google name or email.
@@ -311,7 +373,7 @@ async function suggestUsername(name, address) {
   return `${base.slice(0, 12)}${Date.now() % 100000000}`;
 }
 
-const googleLimiter = limiter({ windowMs: 15 * MINUTE, limit: 20 });
+const googleLimiter = limiter({ windowMs: 15 * MINUTE, limit: 20, name: 'google' });
 
 authRouter.post(
   '/google',
@@ -331,21 +393,15 @@ authRouter.post(
     }
 
     const address = payload.email.toLowerCase();
-    let user = await User.findOne({ googleId: payload.sub });
-    if (!user) {
-      user = await User.findOne({ email: address });
-      if (user) {
-        // Same verified email: link Google to the existing account instead of creating a duplicate.
-        user.googleId = payload.sub;
-        await user.save();
-      }
+    const linked = await User.findOne({ googleId: payload.sub });
+    if (linked) {
+      signIn(res, linked);
+      return res.json({ user: linked.toSelf() });
     }
-    if (user) {
-      signIn(res, user);
-      return res.json({ user: user.toSelf() });
-    }
+    const existing = await User.findOne({ email: address });
+    if (existing) return linkOrAskPassword(res, existing, { sub: payload.sub, email: address, hd: payload.hd });
 
-    const signupToken = signPurposeToken({ sub: payload.sub, email: address }, 'google-signup', '15m');
+    const signupToken = signPurposeToken({ sub: payload.sub, email: address, hd: payload.hd }, 'google-signup', '15m');
     res.json({ needsUsername: true, signupToken, suggestion: await suggestUsername(payload.name, address) });
   }
 );
@@ -359,16 +415,14 @@ authRouter.post(
     const token = verifyPurposeToken(req.body.signupToken, 'google-signup');
     if (!token) throw new HttpError(400, 'Google sign-up expired, continue with Google again', 'SIGNUP_EXPIRED');
 
-    // Already created (double submit) or the email registered meanwhile: link and sign in.
-    const existing = (await User.findOne({ googleId: token.sub })) ?? (await User.findOne({ email: token.email }));
-    if (existing) {
-      if (!existing.googleId) {
-        existing.googleId = token.sub;
-        await existing.save();
-      }
-      signIn(res, existing);
-      return res.json({ user: existing.toSelf() });
+    // Already created (double submit): sign in. The email registered meanwhile: link as /google would.
+    const linked = await User.findOne({ googleId: token.sub });
+    if (linked) {
+      signIn(res, linked);
+      return res.json({ user: linked.toSelf() });
     }
+    const existing = await User.findOne({ email: token.email });
+    if (existing) return linkOrAskPassword(res, existing, token);
 
     if (await usernameTaken(req.body.username, { email: token.email })) {
       const error = new HttpError(409, 'That username is taken');
@@ -383,17 +437,56 @@ authRouter.post(
   }
 );
 
+const linkTokenEmail = (req) => verifyPurposeToken(req.body?.linkToken, 'google-link')?.email ?? 'invalid';
+
+// Links Google to an existing account after its password is confirmed once.
+authRouter.post(
+  '/google/link',
+  limiter({ windowMs: 60 * MINUTE, limit: 10, skipSuccessfulRequests: true, keyGenerator: linkTokenEmail, name: 'google-link-account' }),
+  limiter({ windowMs: 15 * MINUTE, limit: 10, skipSuccessfulRequests: true, name: 'google-link-ip' }),
+  validate({
+    body: z.object({
+      linkToken: z.string({ error: 'Missing link token' }).max(4096),
+      password: z.string({ error: 'Enter your password' }).min(1, 'Enter your password').max(PASSWORD_MAX),
+    }),
+  }),
+  async (req, res) => {
+    requireGoogle();
+    const token = verifyPurposeToken(req.body.linkToken, 'google-link');
+    const expired = () => new HttpError(400, 'This link request expired, continue with Google again', 'LINK_EXPIRED');
+    if (!token) throw expired();
+    const user = await User.findOne({ email: token.email });
+    if (!user) throw expired();
+
+    if (!(await verifyPassword(req.body.password, user.passwordHash ?? DUMMY_HASH)) || !user.passwordHash) {
+      const error = new HttpError(401, 'Incorrect password', 'BAD_CREDENTIALS');
+      error.field = 'password';
+      throw error;
+    }
+    if (await User.exists({ googleId: token.sub, _id: { $ne: user._id } })) {
+      throw new HttpError(409, 'That Google account is already linked to another Chesscube account');
+    }
+
+    user.googleId = token.sub;
+    await user.save();
+    signIn(res, user);
+    res.json({ user: user.toSelf() });
+  }
+);
+
 // ---- Password reset ----
 
 authRouter.post(
   '/forgot-password',
-  limiter({ windowMs: 60 * MINUTE, limit: 5 }),
+  limiter({ windowMs: 60 * MINUTE, limit: 5, name: 'forgot' }),
+  mailIpLimiter,
   validate({ body: z.object({ email }) }),
   async (req, res) => {
     const user = await User.findOne({ email: req.body.email });
-    if (user) {
+    // Whatever happens, the response is the same, so it doesn't reveal whether the account exists.
+    if (user && !resetLocked(user.resetGuard)) {
       const existing = await EmailCode.findOne({ userId: user._id, purpose: 'reset', ...notExpired() });
-      if (!existing || cooldownRemaining(existing.lastSentAt) === 0) {
+      if ((!existing || cooldownRemaining(existing.lastSentAt) === 0) && !(await reserveEmail(user.email))) {
         const newCode = generateCode();
         const now = new Date();
         await EmailCode.findOneAndUpdate(
@@ -413,23 +506,26 @@ authRouter.post(
 
 authRouter.post(
   '/reset-password',
-  limiter({ windowMs: 15 * MINUTE, limit: 20 }),
+  limiter({ windowMs: 15 * MINUTE, limit: 20, name: 'reset' }),
   validate({ body: z.object({ email, code, password }) }),
   async (req, res) => {
-    const invalid = () => new HttpError(400, 'Code expired or invalid, request a new one', 'INVALID_CODE');
+    // One message for every failure (no account, no code, too many tries, wrong code), so it reveals nothing.
+    const invalid = () =>
+      new HttpError(400, 'Incorrect or expired code. If it keeps failing, request a new code later.', 'INVALID_CODE');
     const user = await User.findOne({ email: req.body.email });
-    if (!user) throw invalid();
+    if (!user || resetLocked(user.resetGuard)) throw invalid();
     const record = await EmailCode.findOne({ userId: user._id, purpose: 'reset', ...notExpired() });
-    if (!record) throw invalid();
-    if (record.attempts >= MAX_CODE_ATTEMPTS) {
-      throw new HttpError(429, 'Too many attempts, request a new code', 'TOO_MANY_ATTEMPTS');
-    }
+    if (!record || record.attempts >= MAX_CODE_ATTEMPTS) throw invalid();
     if (!codeMatches(req.body.code, record.codeHash)) {
-      await EmailCode.updateOne({ _id: record._id }, { $inc: { attempts: 1 } });
-      throw new HttpError(400, 'Incorrect code', 'INVALID_CODE');
+      await Promise.all([
+        EmailCode.updateOne({ _id: record._id }, { $inc: { attempts: 1 } }),
+        recordWrongResetGuess(user._id),
+      ]);
+      throw invalid();
     }
 
     user.passwordHash = await hashPassword(req.body.password);
+    user.resetGuard = undefined;
     user.tokenVersion += 1; // signs out every other session
     await user.save();
     await record.deleteOne();

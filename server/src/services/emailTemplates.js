@@ -3,7 +3,14 @@ export const CODE_EXPIRY_MINUTES = 15;
 const escapeHtml = (value) =>
   String(value).replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch]);
 
+const codeRow = (code) => `<tr>
+              <td align="center" style="padding:0 32px;">
+                <div style="display:inline-block;padding:14px 22px;background:#f3ecd8;border-radius:10px;font-family:'Courier New',Courier,monospace;font-size:34px;font-weight:bold;letter-spacing:10px;">${code}</div>
+              </td>
+            </tr>`;
+
 // Table layout and inline styles only: email clients ignore most CSS and images are often blocked.
+// Without `code` it's a plain notice.
 function layout({ heading, intro, code, footer }) {
   return `<!doctype html>
 <html lang="en">
@@ -21,14 +28,10 @@ function layout({ heading, intro, code, footer }) {
                 <p style="margin:0 0 20px;font-size:15px;line-height:1.5;">${intro}</p>
               </td>
             </tr>
+            ${code ? codeRow(code) : ''}
             <tr>
-              <td align="center" style="padding:0 32px;">
-                <div style="display:inline-block;padding:14px 22px;background:#f3ecd8;border-radius:10px;font-family:'Courier New',Courier,monospace;font-size:34px;font-weight:bold;letter-spacing:10px;">${code}</div>
-              </td>
-            </tr>
-            <tr>
-              <td style="padding:20px 32px 28px;font-size:13px;line-height:1.5;color:#7a654d;">
-                <p style="margin:0 0 8px;">This code expires in ${CODE_EXPIRY_MINUTES} minutes.</p>
+              <td style="padding:${code ? 20 : 4}px 32px 28px;font-size:13px;line-height:1.5;color:#7a654d;">
+                ${code ? `<p style="margin:0 0 8px;">This code expires in ${CODE_EXPIRY_MINUTES} minutes.</p>` : ''}
                 <p style="margin:0;">${footer}</p>
               </td>
             </tr>
@@ -97,5 +100,32 @@ export function passwordResetEmail({ code }) {
       code,
       footer: "If you didn't ask to reset your password, you can ignore this email. Your password won't change.",
     }),
+  };
+}
+
+// Sent instead of a code when someone signs up with an address that already has an account, so the sign-up form
+// doesn't reveal which emails are registered.
+export function existingAccountEmail() {
+  const intro =
+    'Someone just tried to create a Chesscube account with this email address, but it already has one. Sign in instead, or reset your password if you forgot it.';
+  return {
+    subject: 'You already have a Chesscube account',
+    text: [intro, '', "If this wasn't you, you can ignore this email. Your account hasn't changed."].join('\n'),
+    html: layout({
+      heading: 'You already have an account',
+      intro,
+      footer: "If this wasn't you, you can ignore this email. Your account hasn't changed.",
+    }),
+  };
+}
+
+// Sent instead of a code when a signed-in player tries to switch to an address another account already uses.
+export function emailInUseEmail() {
+  const intro =
+    'Someone tried to move another Chesscube account to this email address. It already belongs to your account, so nothing was changed.';
+  return {
+    subject: 'Someone tried to use your email on Chesscube',
+    text: [intro, '', "You don't need to do anything."].join('\n'),
+    html: layout({ heading: 'Your email is still yours', intro, footer: "You don't need to do anything." }),
   };
 }

@@ -20,10 +20,11 @@ import {
   MAX_CODE_ATTEMPTS,
   RESEND_COOLDOWN_MS,
 } from '../services/codes.js';
-import { emailChangeEmail } from '../services/emailTemplates.js';
+import { emailChangeEmail, emailInUseEmail } from '../services/emailTemplates.js';
 import { presenceOf } from '../realtime/presence.js';
 import { MINI_USER_FIELDS, miniUser, relationsWith, relationWith } from '../services/friends.js';
 import { mailErrorSummary, sendMail } from '../services/mailer.js';
+import { mailLimitError, reserveEmail } from '../services/mailQuota.js';
 import { hashPassword, verifyPassword } from '../services/passwords.js';
 import { clearSessionCookie, signIn } from '../services/tokens.js';
 import { usernameTaken } from '../services/usernames.js';
@@ -42,8 +43,8 @@ function fieldError(status, message, field, code) {
 }
 
 // Keyed by account rather than IP, so guessing someone's current password is capped per account.
-const accountLimiter = () =>
-  limiter({ windowMs: 15 * MINUTE, limit: 10, skipSuccessfulRequests: true, keyGenerator: (req) => req.user.id });
+const accountLimiter = (name) =>
+  limiter({ windowMs: 15 * MINUTE, limit: 10, skipSuccessfulRequests: true, keyGenerator: (req) => req.user.id, name });
 
 export const usersRouter = Router();
 
@@ -77,7 +78,7 @@ usersRouter.patch(
 usersRouter.post(
   '/me/password',
   requireAuth,
-  accountLimiter(),
+  accountLimiter('password-change'),
   validate({
     body: z.object({
       currentPassword: z.string({ error: 'Enter your current password' }).min(1, 'Enter your current password').max(PASSWORD_MAX),
@@ -106,7 +107,7 @@ usersRouter.post(
 usersRouter.post(
   '/me/email',
   requireAuth,
-  limiter({ windowMs: 60 * MINUTE, limit: 10, keyGenerator: (req) => req.user.id }),
+  limiter({ windowMs: 60 * MINUTE, limit: 10, keyGenerator: (req) => req.user.id, name: 'email-change' }),
   validate({ body: z.object({ email, password: z.string().max(PASSWORD_MAX).optional() }) }),
   async (req, res) => {
     const { user } = req;
@@ -116,15 +117,17 @@ usersRouter.post(
     if (user.passwordHash && !(req.body.password && (await verifyPassword(req.body.password, user.passwordHash)))) {
       throw fieldError(400, 'Incorrect password', 'password', 'BAD_CREDENTIALS');
     }
-    if (await User.exists({ email: newEmail })) {
-      throw fieldError(409, 'An account with this email already exists', 'email');
-    }
+    // An address that belongs to another account goes through the same steps, but its owner gets a notice instead of
+    // the code, so this form can't be used to find out which emails are registered.
+    const taken = Boolean(await User.exists({ email: newEmail }));
 
     const existing = await EmailCode.findOne({ userId: user._id, purpose: 'email', expiresAt: { $gt: new Date() } });
     const wait = cooldownRemaining(existing?.lastSentAt);
     if (wait > 0) {
       throw new HttpError(429, `Please wait ${wait} seconds before requesting another code`, 'COOLDOWN', { retryAfter: wait });
     }
+    const limited = await reserveEmail(newEmail);
+    if (limited) throw mailLimitError(limited);
 
     const newCode = generateCode();
     const now = new Date();
@@ -135,7 +138,7 @@ usersRouter.post(
     );
 
     try {
-      await sendMail({ to: newEmail, ...emailChangeEmail({ username: user.username, code: newCode }) });
+      await sendMail({ to: newEmail, ...(taken ? emailInUseEmail() : emailChangeEmail({ username: user.username, code: newCode })) });
     } catch (err) {
       console.error('Email failed:', mailErrorSummary(err));
       await EmailCode.updateOne({ userId: user._id, purpose: 'email' }, { $set: { lastSentAt: new Date(0) } });
@@ -148,7 +151,7 @@ usersRouter.post(
 usersRouter.post(
   '/me/email/verify',
   requireAuth,
-  limiter({ windowMs: 15 * MINUTE, limit: 30, keyGenerator: (req) => req.user.id }),
+  limiter({ windowMs: 15 * MINUTE, limit: 30, keyGenerator: (req) => req.user.id, name: 'email-verify' }),
   validate({ body: z.object({ code }) }),
   async (req, res) => {
     const { user } = req;
@@ -179,7 +182,7 @@ usersRouter.post(
 usersRouter.delete(
   '/me',
   requireAuth,
-  accountLimiter(),
+  accountLimiter('account-delete'),
   validate({
     body: z.object({
       password: z.string().max(PASSWORD_MAX).optional(),
