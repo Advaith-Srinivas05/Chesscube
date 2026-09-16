@@ -16,10 +16,10 @@ export default {
       goal: { type: 'mate' },
     },
     {
-      text: 'Keep the king on the edge with the queen, then mate with your king’s help.',
-      fen: '4k3/8/4K3/8/8/8/8/7Q w - - 0 1',
-      hint: 'First take the whole seventh rank away with Qh7.',
-      goal: { type: 'line', moves: ['h1h7', 'e8d8', 'h7d7'] },
+      text: 'Your king is too far away to mate on its own, so use the queen to shut the king in first. Take the seventh rank away, walk your king up, then mate.',
+      fen: '5k2/8/8/3K4/8/8/8/7Q w - - 0 1',
+      hint: 'Qh7 takes the whole seventh rank away. Then walk your king up to e6 and mate on the seventh.',
+      goal: { type: 'line', moves: ['h1h7', 'f8e8', 'd5e6', 'e8d8', 'h7d7'] },
     },
   ],
 };

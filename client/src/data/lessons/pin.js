@@ -10,10 +10,10 @@ export default {
       goal: { type: 'move', moves: ['a1e1'] },
     },
     {
-      text: 'The knight is pinned to its king, so it can’t run away. Attack it with a pawn, then win it.',
-      fen: '7k/8/5n2/8/4P3/8/1B6/6K1 w - - 0 1',
-      hint: 'Push the e-pawn.',
-      goal: { type: 'line', moves: ['e4e5', 'h8g8', 'e5f6'] },
+      text: 'The knight is pinned to its king, so it can’t run away — but the e-pawn defends it, so Bxf6 is only a trade. Attack it with a pawn instead, then win it.',
+      fen: '7k/4p3/5n2/8/6P1/8/PB6/6K1 w - - 0 1',
+      hint: 'Push the g-pawn to attack the pinned knight.',
+      goal: { type: 'line', moves: ['g4g5', 'h8g8', 'g5f6'] },
     },
     {
       text: 'The e6-pawn is pinned to its king, so it can’t recapture on d5. Win the queen.',

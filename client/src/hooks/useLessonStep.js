@@ -7,6 +7,7 @@ import { moveSound, playSound } from '../lib/sounds.js';
 
 const REPLY_MS = 350;
 const UNDO_MS = 500;
+const INTRO_MS = 700;
 
 const squares = (uci) => [uci.slice(0, 2), uci.slice(2, 4)];
 
@@ -14,12 +15,13 @@ function createRun(step) {
   const state = startStep(step);
   return {
     state,
-    fen: fenOf(state.pos), // what the board shows; differs from state.pos while a wrong move is on screen
+    // what the board shows; differs from state.pos during the intro and while a wrong move is on screen
+    fen: state.before ?? fenOf(state.pos),
     lastMove: null,
     flash: null, // { square: 'good' | 'bad' }
     feedback: null, // null | 'good' | 'bad'
     hint: null,
-    busy: false,
+    busy: Boolean(state.intro),
     touched: false,
   };
 }
@@ -49,6 +51,19 @@ export default function useLessonStep(step) {
   }, []);
 
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
+
+  // A step with an `intro` opens with the opponent's move, so the learner sees it played.
+  useEffect(() => {
+    const { state } = run;
+    if (!state.intro || !run.busy) return;
+    later(() => {
+      run.fen = fenOf(state.pos);
+      run.lastMove = squares(state.intro.uci);
+      run.busy = false;
+      sound(state.intro.san);
+      bump();
+    }, INTRO_MS);
+  }, [run, later, sound]);
 
   const move = useCallback(
     ({ from, to, promotion }) => {

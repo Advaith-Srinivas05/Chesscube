@@ -46,6 +46,47 @@ function solveDrill(step, maxDepth) {
   return null;
 }
 
+// Walks a `line` goal from `pos`. A free entry ({ anyExcept }) is checked for every move it allows,
+// so the scripted replies after it must work whatever the player picks.
+function checkLine(pos, moves, index, problems) {
+  if (index >= moves.length || problems.length) return;
+  const entry = moves[index];
+  const step = (uci) => {
+    const next = pos.clone();
+    next.play(parseMove(next, uci));
+    checkLine(next, moves, index + 1, problems);
+  };
+
+  if (typeof entry === 'string') {
+    if (!parseMove(pos, entry)) problems.push(`move ${index + 1} (${entry}) is illegal`);
+    else step(entry);
+    return;
+  }
+  if (index % 2 === 1) {
+    problems.push(`move ${index + 1} is a free move, but it is the opponent's reply`);
+    return;
+  }
+  if (!Array.isArray(entry.anyExcept) || !entry.anyExcept.every((s) => SQUARE.test(s))) {
+    problems.push(`move ${index + 1} needs anyExcept: a list of squares`);
+    return;
+  }
+  const choices = legalUcis(pos).filter((uci) => !entry.anyExcept.includes(uci.slice(0, 2)));
+  if (choices.length === 0) {
+    problems.push(`move ${index + 1}: every legal move comes from ${entry.anyExcept.join(', ')}`);
+    return;
+  }
+  for (const uci of choices) {
+    const found = [];
+    const next = pos.clone();
+    next.play(parseMove(next, uci));
+    checkLine(next, moves, index + 1, found);
+    if (found.length) {
+      problems.push(`move ${index + 1}: after ${uci}, ${found[0]}`);
+      return;
+    }
+  }
+}
+
 function checkStep(step) {
   const problems = [];
   if (typeof step.text !== 'string' || !step.text.trim()) problems.push('missing text');
@@ -57,6 +98,11 @@ function checkStep(step) {
     pos = positionFromFen(step.fen);
   } catch (error) {
     return [...problems, error.message];
+  }
+  if (step.intro) {
+    const move = parseMove(pos, step.intro);
+    if (!move) return [...problems, `the opening move ${step.intro} is illegal`];
+    pos.play(move);
   }
   // Not isEnd(): drills often have insufficient material on purpose.
   if (pos.isCheckmate() || pos.isStalemate()) return [...problems, 'the position has no legal moves'];
@@ -90,13 +136,7 @@ function checkStep(step) {
         problems.push('line needs an odd number of moves (it ends with the player’s move)');
         break;
       }
-      const line = pos.clone();
-      goal.moves.forEach((uci, index) => {
-        if (problems.length) return;
-        const move = parseMove(line, uci);
-        if (!move) problems.push(`move ${index + 1} (${uci}) is illegal`);
-        else line.play(move);
-      });
+      checkLine(pos.clone(), goal.moves, 0, problems);
       break;
     }
     case 'move': {

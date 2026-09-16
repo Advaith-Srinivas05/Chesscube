@@ -16,8 +16,9 @@ export default {
     },
     {
       text: 'Your king is in check and has nowhere to go. Block the rook’s attack.',
-      fen: '6k1/8/8/8/8/3B4/5PPP/r5K1 w - - 0 1',
-      goal: { type: 'move', moves: ['d3f1', 'd3b1'] },
+      fen: '6k1/8/8/1B6/8/8/5PPP/r5K1 w - - 0 1',
+      hint: 'Only one square on the back rank stops the check. Which one can the bishop reach?',
+      goal: { type: 'move', moves: ['b5f1'] },
     },
     {
       text: 'Checkmate is a check that can’t be escaped, blocked or captured. It wins the game. Deliver checkmate.',

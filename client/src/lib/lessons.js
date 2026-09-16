@@ -3,8 +3,11 @@ import { opposite } from 'chessops/util';
 import { isSolutionMove } from './chess/puzzle.js';
 import { applyMove, fenOf, positionFromFen } from './chess/rules.js';
 
-// Lesson steps: { text, fen, hint?, goal }. The player is the side to move in `fen`.
+// Lesson steps: { text, fen, hint?, intro?, goal }. The player is the side to move in `fen`, or the
+// other side when the step has an `intro`: the opponent's opening move, played before the player starts.
 // Goals: reach { targets }, captureAll, mate, line { moves } (player at even indexes), move { moves }.
+// A line move is a UCI string, or { anyExcept: [squares] } for a free player move (e.g. a waiting
+// move) that may not come from one of those squares.
 // Plain chessops only, so scripts/validateLessons.js runs this in Node too.
 
 export const GOAL_TYPES = ['reach', 'captureAll', 'mate', 'line', 'move'];
@@ -12,6 +15,7 @@ export const GOAL_TYPES = ['reach', 'captureAll', 'mate', 'line', 'move'];
 const DEFAULT_HINTS = {
   mate: "That isn't checkmate. Look for a move the king can't escape from.",
   line: "That's not the move we're looking for. Try again.",
+  free: 'Leave that piece where it is and play something else.',
   move: "That's not the move we're looking for. Try again.",
   handBack: "In this drill, don't give check. Try another move.",
 };
@@ -32,7 +36,12 @@ export function piecesLeft(pos, color) {
 
 export function startStep(step) {
   const pos = positionFromFen(step.fen);
-  return { pos, player: pos.turn, reached: new Set(), ply: 0, done: false };
+  // With an `intro`, the step starts one move behind: `before` is what the board shows until the
+  // opponent's move has been played out, and the player is the side to move after it.
+  const before = step.intro ? fenOf(pos) : null;
+  const intro = step.intro ? applyMove(pos, step.intro) : null;
+  if (step.intro && !intro) throw new Error(`Illegal opening move ${step.intro}`);
+  return { pos, player: pos.turn, reached: new Set(), ply: 0, done: false, intro, before };
 }
 
 /**
@@ -63,8 +72,13 @@ export function playStepMove(step, state, uci) {
         : wrong(DEFAULT_HINTS.move);
 
     case 'line': {
+      const expected = goal.moves[state.ply];
       const isLast = state.ply === goal.moves.length - 1;
-      if (!isSolutionMove(state.pos, uci, goal.moves[state.ply], isLast)) return wrong(DEFAULT_HINTS.line);
+      if (typeof expected === 'string') {
+        if (!isSolutionMove(state.pos, uci, expected, isLast)) return wrong(DEFAULT_HINTS.line);
+      } else if (expected.anyExcept.includes(played.uci.slice(0, 2))) {
+        return wrong(DEFAULT_HINTS.free);
+      }
       state.ply += 1;
       return accept(after, state.ply >= goal.moves.length);
     }
